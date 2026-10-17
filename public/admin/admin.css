@@ -142,3 +142,27 @@ h2 { font-size: 1.1rem; }
   .stats { grid-template-columns: repeat(4, 1fr); }
 }
 @media (max-width: 560px) { #admin-user { display: none; } .topbar .btn { padding: 8px 10px; } }
+
+/* ------------------------- Rifiniture responsive ------------------------- */
+.interval input { flex: 1 1 0; min-width: 0; }
+.interval .btn { flex: none; }
+.stat { min-width: 0; }
+.stat b { font-size: 1.1rem; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 380px) {
+  .content { padding: 12px; }
+  .card { padding: 14px; }
+  .toolbar .btn { padding: 8px 11px; }
+  .topbar-brand strong { font-size: 1rem; }
+}
+/* Tablet: servizi su due righe invece di cinque colonne strette */
+@media (min-width: 720px) and (max-width: 1099px) {
+  .service-row { grid-template-columns: 2fr 1fr 1fr; }
+  .service-row > :nth-child(4), .service-row > :nth-child(5) { grid-column: 1 / -1; }
+}
+@media (min-width: 1100px) {
+  .service-row { grid-template-columns: 2fr 90px 90px 3fr auto; }
+}
+/* Modale a tutto schermo su telefono */
+@media (max-width: 560px) {
+  .dialog { width: 100vw; max-width: 100vw; height: 100%; max-height: 100%; margin: 0; border-radius: 0; }
+}

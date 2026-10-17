@@ -160,3 +160,34 @@ p { margin: 0; }
 .menu-price, .hours dd { font-variant-numeric: lining-nums tabular-nums; }
 /* Su mobile la barra "Prenota" fissa non deve coprire il fondo dell'hero */
 @media (max-width: 759px) { .hero-content { padding-bottom: 104px; } }
+
+/* ------------------------- Rifiniture responsive ------------------------- */
+/* Nome nell'header sempre su una riga */
+.brand span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.brand { min-width: 0; }
+.nav .btn { flex: none; }
+@media (max-width: 380px) {
+  .brand { font-size: 1rem; gap: 8px; }
+  .brand img { width: 32px; height: 32px; }
+  .nav .btn-sm { padding: 9px 14px; }
+  .container { padding: 0 16px; }
+  .hero-actions .btn { flex: 1 1 auto; }
+}
+/* Titolo hero proporzionato anche a telefono orizzontale */
+.hero h1 { font-size: clamp(2.4rem, min(11vw, 14vh), 5.2rem); }
+@media (max-height: 500px) and (orientation: landscape) {
+  .hero { min-height: 0; }
+  .hero-content { padding-top: 48px; padding-bottom: 40px; }
+  .hero-tagline { margin: 10px 0 18px; }
+}
+/* Barra "Prenota" fissa: compare solo dopo aver superato l'hero */
+.mobile-cta { transform: translateY(110%); transition: transform .25s ease; }
+.mobile-cta.show { transform: none; }
+@media (max-width: 759px) { .hero-content { padding-bottom: 56px; } }
+/* Listino su mobile: descrizione e "Prenota" a tutta larghezza */
+@media (max-width: 759px) {
+  .menu-desc, .menu-meta { grid-column: 1 / -1; }
+  .menu-meta { justify-content: space-between; margin-top: 6px; }
+}
+/* Orari: una fascia per riga */
+.hours dd span { display: block; white-space: nowrap; }

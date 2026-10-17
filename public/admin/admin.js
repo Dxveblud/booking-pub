@@ -157,7 +157,7 @@
     renderStats(days);
     cal.innerHTML = '';
     cal.style.setProperty('--days', days.length);
-    cal.style.setProperty('--col-min', state.view === 'day' ? '220px' : '110px');
+    cal.style.setProperty('--col-min', state.view === 'day' ? '220px' : '96px');
 
     // Intestazioni
     cal.appendChild(el('div', { class: 'cal-head corner' }));

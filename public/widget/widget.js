@@ -47,7 +47,7 @@
       '.' + PREFIX + 'floating{position:fixed;bottom:20px;' + opts.position + ':20px;z-index:2147483000}' +
       '.' + PREFIX + 'overlay{position:fixed;inset:0;z-index:2147483646;background:rgba(18,15,13,.6);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;animation:' + PREFIX + 'fade .15s}' +
       '.' + PREFIX + 'frame{width:100%;height:100%;border:0;background:#fff}' +
-      '@media (min-width:600px){.' + PREFIX + 'frame{width:480px;height:min(780px,92vh);border-radius:20px;box-shadow:0 30px 80px rgba(0,0,0,.35)}}' +
+      '@media (min-width:600px) and (min-height:640px){.' + PREFIX + 'frame{width:480px;height:min(780px,92vh);border-radius:20px;box-shadow:0 30px 80px rgba(0,0,0,.35)}}' +
       '@keyframes ' + PREFIX + 'fade{from{opacity:0}to{opacity:1}}';
     var style = document.createElement('style');
     style.setAttribute('data-booking-widget', '');

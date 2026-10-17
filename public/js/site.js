@@ -118,8 +118,8 @@
     WEEK_ORDER.forEach(function (d) {
       var intervals = hours[d] || [];
       var dt = el('dt', d === now.day ? 'today' : '', DAYS[d]);
-      var dd = el('dd', d === now.day ? 'today' : (intervals.length ? '' : 'closed'),
-        intervals.length ? intervals.map(function (i) { return i.start + '–' + i.end; }).join('  ·  ') : 'Chiuso');
+      var dd = el('dd', d === now.day ? 'today' : (intervals.length ? '' : 'closed'), intervals.length ? null : 'Chiuso');
+      intervals.forEach(function (i) { dd.appendChild(el('span', null, i.start + '–' + i.end)); });
       dl.appendChild(dt);
       dl.appendChild(dd);
     });
@@ -136,6 +136,16 @@
       status.textContent = next ? 'Chiuso ora · riapre alle ' + next.start : 'Chiuso ora · prenota per i prossimi giorni';
     }
     status.hidden = false;
+  }
+
+  // La barra "Prenota" fissa su mobile compare solo quando l'hero non si vede più
+  var bar = document.querySelector('.mobile-cta');
+  if (bar && 'IntersectionObserver' in window) {
+    new IntersectionObserver(function (entries) {
+      bar.classList.toggle('show', !entries[0].isIntersecting);
+    }, { threshold: 0.15 }).observe($('hero'));
+  } else if (bar) {
+    bar.classList.add('show');
   }
 
   getJson('/api/business')

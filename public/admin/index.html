@@ -13,12 +13,13 @@
 <body>
   <header class="topbar">
     <div class="topbar-brand">
-      <img id="business-logo" src="/img/logo.svg" alt="" width="32" height="32">
+      <img id="business-logo" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="" width="32" height="32">
       <strong id="business-name">Gestione</strong>
     </div>
     <div class="topbar-right">
+      <span class="role-badge" id="role-badge" hidden>Super admin</span>
       <span class="muted" id="admin-user"></span>
-      <a class="btn btn-ghost" href="/" target="_blank" rel="noopener">Vedi sito</a>
+      <a class="btn btn-ghost" id="view-site" href="/" target="_blank" rel="noopener">Vedi sito</a>
       <button type="button" class="btn btn-ghost" id="logout">Esci</button>
     </div>
   </header>
@@ -29,6 +30,8 @@
     <button type="button" role="tab" class="tab" data-tab="blocks"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M6 6l12 12"/></svg><span>Ferie</span></button>
     <button type="button" role="tab" class="tab" data-tab="services"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="6.5" cy="17.5" r="2.5"/><path d="M8.6 8l11.4 9M8.6 16L20 7"/></svg><span>Servizi</span></button>
     <button type="button" role="tab" class="tab" data-tab="hours"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg><span>Orari</span></button>
+    <button type="button" role="tab" class="tab" data-tab="shop"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5l1.5-5h13L20 9.5M4 9.5h16M4 9.5a2.7 2.7 0 0 0 5.3 0 2.7 2.7 0 0 0 5.4 0 2.7 2.7 0 0 0 5.3 0M5.5 12v7.5h13V12M10 19.5v-4h4v4"/></svg><span>Negozio</span></button>
+    <button type="button" role="tab" class="tab" data-tab="platform" id="tab-platform" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5"/></svg><span>Negozi</span></button>
   </nav>
 
   <main class="content">
@@ -113,6 +116,77 @@
         </div>
         <button type="submit" class="btn btn-primary">Salva orari</button>
       </form>
+    </section>
+
+    <!-- =============================== NEGOZIO ============================ -->
+    <section class="panel" data-panel="shop" hidden>
+      <div class="card">
+        <h2>Prenotazioni sul tuo sito</h2>
+        <p class="muted small">Incolla questa riga nel sito, prima di <code>&lt;/body&gt;</code>: compare il pulsante "Prenota" in basso a destra.</p>
+        <div class="code-box"><code id="snippet-float"></code><button type="button" class="btn btn-small" data-copy="snippet-float">Copia</button></div>
+        <p class="muted small">Preferisci usare un tuo pulsante? Aggiungi <code>data-booking-open</code> al pulsante e incolla questa riga:</p>
+        <div class="code-box"><code id="snippet-inline"></code><button type="button" class="btn btn-small" data-copy="snippet-inline">Copia</button></div>
+        <p class="muted small">Non hai un sito? Questa è la tua pagina pronta da condividere (Instagram, WhatsApp, Google):</p>
+        <div class="code-box"><code id="shop-page"></code><button type="button" class="btn btn-small" data-copy="shop-page">Copia</button></div>
+        <a class="btn btn-small" id="shop-page-open" href="#" target="_blank" rel="noopener">Apri la pagina</a>
+      </div>
+
+      <form class="card" id="shop-form" novalidate>
+        <h2>Dati del negozio</h2>
+        <label class="field"><span>Nome</span><input name="name" maxlength="80" required></label>
+        <label class="field"><span>Slogan <small>(una riga sotto il nome)</small></span><input name="tagline" maxlength="140"></label>
+        <label class="field"><span>Descrizione <small>(sezione "Chi siamo")</small></span><textarea name="description" rows="4" maxlength="1200"></textarea></label>
+        <div class="grid-2">
+          <label class="field"><span>Indirizzo</span><input name="address" maxlength="160"></label>
+          <label class="field"><span>Telefono</span><input name="phone" type="tel" maxlength="30"></label>
+          <label class="field"><span>Email</span><input name="email" type="email" maxlength="120"></label>
+          <label class="field"><span>Instagram <small>(link)</small></span><input name="instagram" maxlength="120" placeholder="https://instagram.com/…"></label>
+        </div>
+
+        <h2 class="mt">Aspetto</h2>
+        <div class="grid-2">
+          <label class="field color-field"><span>Colore principale</span><input type="color" name="primaryColor"></label>
+          <label class="field color-field"><span>Colore pulsanti</span><input type="color" name="accentColor"></label>
+        </div>
+        <div class="img-fields">
+          <div class="img-field" data-img="logo"><span class="img-label">Logo</span><div class="img-preview"></div>
+            <div class="img-actions"><label class="btn btn-small">Carica<input type="file" accept="image/png,image/jpeg,image/webp" hidden></label><button type="button" class="btn btn-small btn-ghost img-remove">Rimuovi</button></div></div>
+          <div class="img-field" data-img="heroImage"><span class="img-label">Foto principale</span><div class="img-preview"></div>
+            <div class="img-actions"><label class="btn btn-small">Carica<input type="file" accept="image/png,image/jpeg,image/webp" hidden></label><button type="button" class="btn btn-small btn-ghost img-remove">Rimuovi</button></div></div>
+          <div class="img-field" data-img="aboutImage"><span class="img-label">Foto "Chi siamo"</span><div class="img-preview"></div>
+            <div class="img-actions"><label class="btn btn-small">Carica<input type="file" accept="image/png,image/jpeg,image/webp" hidden></label><button type="button" class="btn btn-small btn-ghost img-remove">Rimuovi</button></div></div>
+        </div>
+        <label class="field"><span>Titolo sezione "Chi siamo"</span><input name="aboutTitle" maxlength="80" placeholder="Es. Una bottega, non una catena"></label>
+
+        <h3 class="sub">Punti di forza <small class="muted">(fino a 3)</small></h3>
+        <div id="highlights-fields"></div>
+
+        <h3 class="sub">Galleria <small class="muted">(fino a 12 foto)</small></h3>
+        <div class="gallery-edit" id="gallery-edit"></div>
+        <label class="btn btn-small">+ Aggiungi foto<input type="file" id="gallery-add" accept="image/png,image/jpeg,image/webp" multiple hidden></label>
+
+        <div class="form-save"><button type="submit" class="btn btn-primary">Salva modifiche</button></div>
+      </form>
+    </section>
+
+    <!-- ================================ NEGOZI ============================ -->
+    <section class="panel" data-panel="platform" hidden>
+      <form class="card" id="newshop-form" novalidate>
+        <h2>Nuovo negozio</h2>
+        <div class="grid-2">
+          <label class="field"><span>Nome dell'attività</span><input name="name" required maxlength="80" placeholder="Barberia Mario"></label>
+          <label class="field"><span>Tipo</span><select name="type" id="newshop-type"></select></label>
+          <label class="field"><span>Codice negozio <small>(per il widget, non si cambia)</small></span><input name="slug" maxlength="40" placeholder="barberia-mario"></label>
+          <label class="field"><span>Username del titolare <small>(facoltativo)</small></span><input name="ownerUsername" maxlength="40" placeholder="uguale al codice"></label>
+        </div>
+        <p class="error" id="newshop-error" hidden></p>
+        <button type="submit" class="btn btn-primary">Crea negozio</button>
+        <div class="created" id="newshop-result" hidden></div>
+      </form>
+      <div class="card">
+        <h2>Negozi</h2>
+        <div id="shop-list"></div>
+      </div>
     </section>
   </main>
 

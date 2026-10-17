@@ -15,6 +15,7 @@ const config = require('../config');
 const { Booking, Service, SlotLock } = require('../models');
 const { getSettings, openingHoursFromConfig } = require('./settingsService');
 const { seedDefaultServices } = require('./bootstrap');
+const { getBusiness } = require('./businessService');
 const { getAvailability } = require('./availability');
 const { createBooking } = require('./bookingService');
 const { addDays, fromMinutes, nowInTimezone, weekdayOf } = require('../utils/time');
@@ -50,6 +51,7 @@ async function clearDemoBookings(fromDate = '0000-00-00') {
 
 /** Ricarica servizi, orari e regole da config.json (solo quando cambia seedVersion). */
 async function applySeed(settings) {
+  // La demo riguarda solo il negozio predefinito (config.json → business.id)
   console.log(`[demo] Carico i dati di esempio (versione ${config.demo.seedVersion})`);
   await clearDemoBookings();
   await Service.deleteMany({ businessId });
@@ -63,7 +65,7 @@ async function applySeed(settings) {
 }
 
 /** Riempie un giorno con prenotazioni finte, rispettando orari e disponibilità reali. */
-async function fillDay(date, services, settings) {
+async function fillDay(business, date, services, settings) {
   const intervals = settings.intervalsFor(weekdayOf(date));
   let created = 0;
   for (const { start, end } of intervals) {
@@ -72,11 +74,12 @@ async function fillDay(date, services, settings) {
       if (Math.random() < config.demo.fillRatio) {
         const service = pick(services);
         // eslint-disable-next-line no-await-in-loop
-        const slots = (await getAvailability(service, date, date)).get(date) || [];
+        const slots = (await getAvailability(business, service, date, date)).get(date) || [];
         if (slots.includes(t)) {
           try {
             // eslint-disable-next-line no-await-in-loop
             await createBooking(
+              business,
               { serviceId: service._id, date, time: fromMinutes(t), customer: fakeCustomer(), notes: pick(NOTES) },
               { source: Math.random() < 0.7 ? 'online' : 'admin', isDemo: true, silent: true }
             );
@@ -95,21 +98,23 @@ async function fillDay(date, services, settings) {
 }
 
 async function refreshDemoData() {
-  const settings = await getSettings();
+  const business = await getBusiness(businessId, { fresh: true });
+  if (!business) return;
+  const settings = await getSettings(businessId);
   if (settings.demoSeedVersion !== config.demo.seedVersion) await applySeed(settings);
 
   const services = await Service.find({ businessId, active: true });
   if (!services.length) return;
 
   // Giorni futuri senza prenotazioni demo → da riempire (oggi incluso, solo orari futuri)
-  const today = nowInTimezone(config.business.timezone).date;
+  const today = nowInTimezone(business.timezone).date;
   let total = 0;
   for (let i = 0; i <= config.demo.daysToFill; i += 1) {
     const date = addDays(today, i);
     // eslint-disable-next-line no-await-in-loop
     const already = await Booking.exists({ businessId, isDemo: true, date });
     // eslint-disable-next-line no-await-in-loop
-    if (!already) total += await fillDay(date, services, settings);
+    if (!already) total += await fillDay(business, date, services, settings);
   }
   if (total) console.log(`[demo] Aggiunte ${total} prenotazioni di esempio`);
 }

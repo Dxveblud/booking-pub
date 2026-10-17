@@ -191,3 +191,6 @@ p { margin: 0; }
 }
 /* Orari: una fascia per riga */
 .hours dd span { display: block; white-space: nowrap; }
+/* Negozio senza foto "chi siamo": testo a tutta larghezza */
+#chi-siamo.no-photo .about { grid-template-columns: 1fr; max-width: 760px; }
+#chi-siamo.no-photo .about-photo { display: none; }

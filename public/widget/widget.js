@@ -2,9 +2,10 @@
  * Booking Widget — loader da incorporare in qualunque sito.
  *
  * Uso minimo (pulsante flottante in basso a destra):
- *   <script src="https://TUO-DOMINIO/widget/widget.js" defer></script>
+ *   <script src="https://TUO-DOMINIO/widget/widget.js" data-shop="codice-negozio" defer></script>
  *
  * Opzioni (attributi data-* sul tag <script>):
+ *   data-shop="barberia-mario"                 codice del negozio (obbligatorio sui siti dei clienti)
  *   data-mode="floating" | "inline" | "none"   (default: floating)
  *   data-target="#id-contenitore"              dove inserire il pulsante (mode inline)
  *   data-label="Prenota ora"                   testo del pulsante
@@ -32,6 +33,8 @@
     color: script.getAttribute('data-color') || '#1c1917',
     position: script.getAttribute('data-position') === 'left' ? 'left' : 'right',
   };
+  // Letto all'apertura: la pagina può impostarlo anche dopo il caricamento
+  function shop() { return script.getAttribute('data-shop') || ''; }
 
   var PREFIX = 'btw-';
   var overlay = null;
@@ -58,6 +61,7 @@
   function open(options) {
     if (overlay) return;
     var serviceId = options && options.serviceId;
+    var shopId = (options && options.shop) || shop();
     lastFocus = document.activeElement;
     overlay = document.createElement('div');
     overlay.className = PREFIX + 'overlay';
@@ -68,7 +72,9 @@
     var iframe = document.createElement('iframe');
     iframe.className = PREFIX + 'frame';
     iframe.title = 'Prenotazione';
-    iframe.src = origin + '/widget/booking.html?embed=1' + (serviceId ? '&service=' + encodeURIComponent(serviceId) : '');
+    iframe.src = origin + '/widget/booking.html?embed=1' +
+      (shopId ? '&shop=' + encodeURIComponent(shopId) : '') +
+      (serviceId ? '&service=' + encodeURIComponent(serviceId) : '');
     overlay.appendChild(iframe);
 
     // Click fuori dal riquadro → chiude

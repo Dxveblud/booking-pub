@@ -1,13 +1,11 @@
 /**
- * Lettura/scrittura delle impostazioni (orari di apertura e regole).
- * Al primo avvio il documento viene creato con i default di config.json.
+ * Lettura/scrittura delle impostazioni di un negozio (orari e regole).
+ * Se il documento manca viene creato con i default di config.json.
  */
 const { Settings } = require('../models');
 const config = require('../config');
 const { toMinutes, fromMinutes, isValidTime } = require('../utils/time');
 const { badRequest } = require('../utils/errors');
-
-const businessId = config.business.id;
 
 /** Converte gli orari di config.json ({"1": [{start:"09:00", end:"13:00"}]}) nel formato DB. */
 function openingHoursFromConfig(hours = {}) {
@@ -22,12 +20,12 @@ function openingHoursFromConfig(hours = {}) {
   return result;
 }
 
-async function getSettings() {
+async function getSettings(businessId, openingHours = config.defaults.openingHours) {
   let settings = await Settings.findOne({ businessId });
   if (!settings) {
     settings = await Settings.create({
       businessId,
-      openingHours: openingHoursFromConfig(config.defaults.openingHours),
+      openingHours: openingHoursFromConfig(openingHours),
       slotStepMinutes: config.booking.slotStepMinutes,
       minNoticeMinutes: config.booking.minNoticeMinutes,
       maxDaysAhead: config.booking.maxDaysAhead,
@@ -80,8 +78,8 @@ function parseOpeningHours(input) {
   return result;
 }
 
-async function updateSettings(body) {
-  const settings = await getSettings();
+async function updateSettings(businessId, body) {
+  const settings = await getSettings(businessId);
   if (body.openingHours !== undefined) settings.openingHours = parseOpeningHours(body.openingHours);
   for (const key of ['slotStepMinutes', 'minNoticeMinutes', 'maxDaysAhead']) {
     if (body[key] !== undefined) {

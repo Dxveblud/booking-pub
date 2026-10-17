@@ -1,7 +1,8 @@
 /**
- * API pubbliche usate dal widget e dal sito.
+ * API pubbliche usate dal widget e dalla pagina del negozio.
+ * Ogni richiesta indica il negozio con ?shop=<codice> (vedi middleware/shop.js).
  *
- *   GET  /api/business                       info attività (da config.json)
+ *   GET  /api/business                       dati del negozio
  *   GET  /api/services                       servizi attivi
  *   GET  /api/opening-hours                  orari di apertura settimanali
  *   GET  /api/availability/days              giorni con almeno un orario libero
@@ -13,6 +14,8 @@ const rateLimit = require('express-rate-limit');
 const mongoose = require('mongoose');
 const config = require('../config');
 const { Service } = require('../models');
+const { resolvePublicShop } = require('../middleware/shop');
+const { serializePublic } = require('../services/businessService');
 const { listServices, serializeService } = require('../services/catalogService');
 const { getSettings, serializeOpeningHours } = require('../services/settingsService');
 const { getAvailability } = require('../services/availability');
@@ -31,21 +34,22 @@ const bookingLimiter = rateLimit({
   message: { error: { code: 'TOO_MANY_REQUESTS', message: 'Troppe richieste, riprova tra qualche minuto' } },
 });
 
-async function loadActiveService(serviceId) {
+router.use(resolvePublicShop);
+
+async function loadActiveService(business, serviceId) {
   if (!mongoose.isValidObjectId(serviceId)) throw badRequest('Servizio non valido');
-  const service = await Service.findOne({ _id: serviceId, businessId: config.business.id, active: true });
+  const service = await Service.findOne({ _id: serviceId, businessId: business.slug, active: true });
   if (!service) throw badRequest('Servizio non trovato');
   return service;
 }
 
 router.get('/business', async (req, res) => {
-  const settings = await getSettings();
-  const { id, ...business } = config.business; // l'id interno non serve al client
-  res.json({ ...business, site: config.site, maxDaysAhead: settings.maxDaysAhead });
+  const settings = await getSettings(req.business.slug);
+  res.json({ ...serializePublic(req.business), maxDaysAhead: settings.maxDaysAhead });
 });
 
 router.get('/services', async (req, res) => {
-  const services = await listServices({ onlyActive: true });
+  const services = await listServices(req.business.slug, { onlyActive: true });
   res.json(services.map((s) => {
     const { active, sortOrder, ...pub } = serializeService(s);
     return pub;
@@ -53,15 +57,15 @@ router.get('/services', async (req, res) => {
 });
 
 router.get('/opening-hours', async (req, res) => {
-  res.json(serializeOpeningHours(await getSettings()));
+  res.json(serializeOpeningHours(await getSettings(req.business.slug)));
 });
 
 /** Giorni prenotabili da oggi in avanti, con il numero di orari liberi. */
 router.get('/availability/days', async (req, res) => {
-  const service = await loadActiveService(req.query.serviceId);
-  const settings = await getSettings();
-  const today = nowInTimezone(config.business.timezone).date;
-  const availability = await getAvailability(service, today, addDays(today, settings.maxDaysAhead));
+  const service = await loadActiveService(req.business, req.query.serviceId);
+  const settings = await getSettings(req.business.slug);
+  const today = nowInTimezone(req.business.timezone).date;
+  const availability = await getAvailability(req.business, service, today, addDays(today, settings.maxDaysAhead));
   const days = [];
   for (const [date, slots] of availability) days.push({ date, available: slots.length });
   res.json({ days });
@@ -70,14 +74,14 @@ router.get('/availability/days', async (req, res) => {
 router.get('/availability', async (req, res) => {
   const { date } = req.query;
   if (!isValidDate(date)) throw badRequest('Data non valida');
-  const service = await loadActiveService(req.query.serviceId);
-  const availability = await getAvailability(service, date, date);
+  const service = await loadActiveService(req.business, req.query.serviceId);
+  const availability = await getAvailability(req.business, service, date, date);
   res.json({ date, slots: (availability.get(date) || []).map(fromMinutes) });
 });
 
 router.post('/bookings', bookingLimiter, async (req, res) => {
   const { serviceId, date, time, customer, notes } = req.body || {};
-  const booking = await createBooking({ serviceId, date, time, customer, notes }, { source: 'online' });
+  const booking = await createBooking(req.business, { serviceId, date, time, customer, notes }, { source: 'online' });
   res.status(201).json(serializePublicBooking(booking));
 });
 

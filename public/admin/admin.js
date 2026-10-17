@@ -18,6 +18,15 @@
 
   function $(id) { return document.getElementById(id); }
 
+  /** Logo di ripiego: l'iniziale del negozio nei suoi colori. */
+  function monogram(name, color) {
+    var letter = (String(name || '').trim().charAt(0) || '•').toUpperCase().replace(/[^A-Z0-9À-Ý]/, '•');
+    var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="' + (color || '#1c1917') +
+      '"/><text x="32" y="43" font-family="Georgia,serif" font-size="32" fill="#fff" text-anchor="middle">' + letter + '</text></svg>';
+    return 'data:image/svg+xml,' + encodeURIComponent(svg);
+  }
+
+
   function el(tag, attrs, children) {
     var node = document.createElement(tag);
     Object.keys(attrs || {}).forEach(function (k) {
@@ -88,6 +97,7 @@
     bookings: [],
     blocks: [],
     editing: null, // prenotazione in modifica nella modale
+    me: null, // utente loggato e negozio corrente
   };
 
   /* =================================================================== */
@@ -105,6 +115,8 @@
     if (name === 'blocks') loadBlocks();
     if (name === 'services') loadServices().then(renderServices);
     if (name === 'hours') loadSettings().then(renderHours);
+    if (name === 'shop') renderShopPanel();
+    if (name === 'platform') loadPlatform();
   }
 
   /* =================================================================== */
@@ -691,6 +703,263 @@
   }
 
   /* =================================================================== */
+  /* Negozio: dati, aspetto, codice da incollare                         */
+  /* =================================================================== */
+
+  /** Applica nome, logo e colori del negozio corrente all'interfaccia. */
+  function applyBusiness(b) {
+    $('business-name').textContent = b.name;
+    document.title = 'Gestione · ' + b.name;
+    if (b.locale) LOCALE = b.locale;
+    if (b.currency) CURRENCY = b.currency;
+    $('business-logo').src = b.logo || monogram(b.name, b.primaryColor);
+    var root = document.documentElement.style;
+    if (b.primaryColor) root.setProperty('--primary', b.primaryColor);
+    if (b.accentColor) root.setProperty('--accent', b.accentColor);
+    $('view-site').href = '/s/' + b.slug;
+  }
+
+  function loadMe() {
+    return api('/me').then(function (me) {
+      state.me = me;
+      $('admin-user').textContent = me.username;
+      var isSuper = me.role === 'super';
+      $('role-badge').hidden = !isSuper;
+      $('tab-platform').hidden = !isSuper;
+      document.body.classList.toggle('is-super', isSuper);
+      applyBusiness(me.business);
+      return me;
+    });
+  }
+
+  function copyText(id, btn) {
+    var value = $(id).textContent;
+    var done = function () { var old = btn.textContent; btn.textContent = 'Copiato ✓'; setTimeout(function () { btn.textContent = old; }, 1500); };
+    if (navigator.clipboard) navigator.clipboard.writeText(value).then(done, function () { window.prompt('Copia il testo:', value); });
+    else window.prompt('Copia il testo:', value);
+  }
+
+  /** Carica un'immagine e restituisce il suo indirizzo. */
+  function uploadImage(file) {
+    if (file.size > 5 * 1024 * 1024) return Promise.reject(new Error('Immagine troppo grande (massimo 5 MB)'));
+    return fetch('/admin/api/uploads', { method: 'POST', headers: { 'Content-Type': file.type }, body: file, credentials: 'same-origin' })
+      .then(function (res) {
+        return res.json().catch(function () { return {}; }).then(function (data) {
+          if (!res.ok) throw new Error((data.error && data.error.message) || 'Caricamento non riuscito');
+          return data.url;
+        });
+      });
+  }
+
+  // Bozza delle immagini del modulo (salvate solo con "Salva modifiche")
+  var draft = { images: {}, gallery: [] };
+
+  function renderImageField(box) {
+    var key = box.getAttribute('data-img');
+    var url = draft.images[key];
+    var preview = box.querySelector('.img-preview');
+    preview.innerHTML = '';
+    preview.classList.toggle('empty', !url);
+    if (url) preview.appendChild(el('img', { src: url, alt: '' }));
+    else preview.appendChild(el('span', { text: 'Nessuna immagine' }));
+    box.querySelector('.img-remove').hidden = !url;
+  }
+
+  function renderGalleryEdit() {
+    var box = $('gallery-edit');
+    box.innerHTML = '';
+    draft.gallery.forEach(function (url, i) {
+      box.appendChild(el('figure', {}, [
+        el('img', { src: url, alt: '' }),
+        el('button', { type: 'button', class: 'g-remove', 'aria-label': 'Rimuovi foto', text: '✕', onclick: function () { draft.gallery.splice(i, 1); renderGalleryEdit(); } }),
+      ]));
+    });
+    if (!draft.gallery.length) box.appendChild(el('p', { class: 'muted small', text: 'Nessuna foto: la sezione Galleria non viene mostrata.' }));
+  }
+
+  function renderHighlightFields(list) {
+    var box = $('highlights-fields');
+    box.innerHTML = '';
+    for (var i = 0; i < 3; i += 1) {
+      var h = list[i] || {};
+      box.appendChild(el('div', { class: 'grid-hl' }, [
+        el('input', { 'data-hl': 'title', value: h.title || '', maxlength: 60, placeholder: 'Titolo ' + (i + 1), 'aria-label': 'Titolo punto di forza ' + (i + 1) }),
+        el('input', { 'data-hl': 'text', value: h.text || '', maxlength: 160, placeholder: 'Descrizione breve', 'aria-label': 'Descrizione punto di forza ' + (i + 1) }),
+      ]));
+    }
+  }
+
+  function renderShopPanel() {
+    var b = state.me.business;
+    var origin = window.location.origin;
+    $('snippet-float').textContent = '<script src="' + origin + '/widget/widget.js" data-shop="' + b.slug + '" defer></script>';
+    $('snippet-inline').textContent = '<script src="' + origin + '/widget/widget.js" data-shop="' + b.slug + '" data-mode="none" defer></script>';
+    $('shop-page').textContent = origin + '/s/' + b.slug;
+    $('shop-page-open').href = '/s/' + b.slug;
+
+    var f = $('shop-form').elements;
+    ['name', 'tagline', 'description', 'address', 'phone', 'email', 'instagram'].forEach(function (k) { f[k].value = b[k] || ''; });
+    f.primaryColor.value = b.primaryColor || '#1c1917';
+    f.accentColor.value = b.accentColor || '#b08a4e';
+    f.aboutTitle.value = b.site.aboutTitle || '';
+    draft.images = { logo: b.logo, heroImage: b.site.heroImage, aboutImage: b.site.aboutImage };
+    draft.gallery = b.site.gallery.slice();
+    document.querySelectorAll('.img-field').forEach(renderImageField);
+    renderGalleryEdit();
+    renderHighlightFields(b.site.highlights || []);
+  }
+
+  function saveShop(e) {
+    e.preventDefault();
+    var f = e.target.elements;
+    var highlights = [];
+    $('highlights-fields').querySelectorAll('.grid-hl').forEach(function (row) {
+      var title = row.querySelector('[data-hl=title]').value.trim();
+      if (title) highlights.push({ title: title, text: row.querySelector('[data-hl=text]').value.trim() });
+    });
+    var body = {
+      name: f.name.value, tagline: f.tagline.value, description: f.description.value,
+      address: f.address.value, phone: f.phone.value, email: f.email.value, instagram: f.instagram.value,
+      primaryColor: f.primaryColor.value, accentColor: f.accentColor.value,
+      logo: draft.images.logo || '',
+      site: {
+        heroImage: draft.images.heroImage || '', aboutImage: draft.images.aboutImage || '',
+        aboutTitle: f.aboutTitle.value, highlights: highlights, gallery: draft.gallery,
+      },
+    };
+    var btn = e.target.querySelector('[type=submit]');
+    btn.disabled = true;
+    api('/business', { method: 'PUT', body: body })
+      .then(function (b) { state.me.business = b; applyBusiness(b); toast('Negozio aggiornato'); })
+      .catch(function (err) { toast(err.message, true); })
+      .finally(function () { btn.disabled = false; });
+  }
+
+  function initShopForm() {
+    $('shop-form').addEventListener('submit', saveShop);
+    document.querySelectorAll('[data-copy]').forEach(function (b) {
+      b.addEventListener('click', function () { copyText(b.getAttribute('data-copy'), b); });
+    });
+    document.querySelectorAll('.img-field').forEach(function (box) {
+      var key = box.getAttribute('data-img');
+      box.querySelector('input[type=file]').addEventListener('change', function (e) {
+        var file = e.target.files[0];
+        e.target.value = '';
+        if (!file) return;
+        box.classList.add('loading');
+        uploadImage(file)
+          .then(function (url) { draft.images[key] = url; renderImageField(box); toast('Immagine caricata: ricordati di salvare'); })
+          .catch(function (err) { toast(err.message, true); })
+          .finally(function () { box.classList.remove('loading'); });
+      });
+      box.querySelector('.img-remove').addEventListener('click', function () { draft.images[key] = ''; renderImageField(box); });
+    });
+    $('gallery-add').addEventListener('change', function (e) {
+      var files = Array.prototype.slice.call(e.target.files, 0, 12 - draft.gallery.length);
+      e.target.value = '';
+      files.reduce(function (p, file) {
+        return p.then(function () { return uploadImage(file).then(function (url) { draft.gallery.push(url); renderGalleryEdit(); }); });
+      }, Promise.resolve())
+        .then(function () { if (files.length) toast('Foto caricate: ricordati di salvare'); })
+        .catch(function (err) { toast(err.message, true); });
+    });
+  }
+
+  /* =================================================================== */
+  /* Negozi (solo super admin)                                           */
+  /* =================================================================== */
+
+  function slugify(v) {
+    return v.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
+  }
+
+  function loadPlatform() {
+    var types = $('newshop-type');
+    if (!types.options.length) {
+      api('/platform/templates').then(function (list) {
+        list.forEach(function (t) { types.appendChild(el('option', { value: t.id, text: t.label })); });
+      });
+    }
+    return api('/platform/shops').then(renderShopList).catch(function (err) { toast(err.message, true); });
+  }
+
+  function credentialsBox(title, slug, owner) {
+    var origin = window.location.origin;
+    var lines = [
+      'Pannello: ' + origin + '/admin',
+      'Utente: ' + owner.username,
+      'Password: ' + owner.password,
+      'Pagina: ' + origin + '/s/' + slug,
+      'Widget: <script src="' + origin + '/widget/widget.js" data-shop="' + slug + '" defer></script>',
+    ];
+    var pre = el('pre', { id: 'cred-' + slug, text: lines.join('\n') });
+    var copy = el('button', { type: 'button', class: 'btn btn-small btn-primary', text: 'Copia tutto' });
+    copy.addEventListener('click', function () { copyText('cred-' + slug, copy); });
+    return el('div', {}, [el('strong', { text: title }), el('p', { class: 'muted small', text: 'Mandali al cliente: la password non verrà più mostrata.' }), pre, copy]);
+  }
+
+  function renderShopList(list) {
+    var box = $('shop-list');
+    box.innerHTML = '';
+    var current = state.me.business.slug;
+    list.forEach(function (b) {
+      var enter = el('button', { type: 'button', class: 'btn btn-small btn-primary', text: b.slug === current ? 'In uso' : 'Gestisci' });
+      enter.disabled = b.slug === current;
+      enter.addEventListener('click', function () {
+        api('/platform/shops/' + b.slug + '/enter', { method: 'POST', body: {} })
+          .then(function () { return loadMe(); })
+          .then(function () { state.services = []; state.selected = null; toast('Ora stai gestendo ' + b.name); showTab('calendar'); })
+          .catch(function (err) { toast(err.message, true); });
+      });
+      var toggle = el('button', { type: 'button', class: 'btn btn-small' + (b.active ? ' btn-danger' : ''), text: b.active ? 'Disattiva' : 'Riattiva' });
+      toggle.addEventListener('click', function () {
+        if (b.active && !confirm('Disattivare "' + b.name + '"? Widget e pagina smetteranno di accettare prenotazioni.')) return;
+        api('/platform/shops/' + b.slug, { method: 'PUT', body: { active: !b.active } }).then(loadPlatform).catch(function (err) { toast(err.message, true); });
+      });
+      var reset = el('button', { type: 'button', class: 'btn btn-small btn-ghost', text: 'Nuova password' });
+      var extra = el('div', { class: 'shop-cred' });
+      reset.addEventListener('click', function () {
+        if (!confirm('Generare una nuova password per il titolare di "' + b.name + '"? Quella vecchia smetterà di funzionare.')) return;
+        api('/platform/shops/' + b.slug + '/reset-password', { method: 'POST', body: {} })
+          .then(function (owner) { extra.innerHTML = ''; extra.appendChild(credentialsBox('Nuove credenziali', b.slug, owner)); })
+          .catch(function (err) { toast(err.message, true); });
+      });
+      box.appendChild(el('div', { class: 'shop-row' + (b.active ? '' : ' inactive') }, [
+        el('img', { src: b.logo || monogram(b.name, b.primaryColor), alt: '', class: 'shop-logo' }),
+        el('div', { class: 'shop-info' }, [
+          el('strong', { text: b.name + (b.active ? '' : ' (disattivato)') }),
+          el('span', { class: 'muted small', text: b.slug + (b.owner ? ' · titolare: ' + b.owner : '') + ' · ' + b.upcoming + ' prenotazioni in arrivo' }),
+          el('a', { href: '/s/' + b.slug, target: '_blank', rel: 'noopener', class: 'small', text: window.location.host + '/s/' + b.slug }),
+        ]),
+        el('div', { class: 'shop-actions' }, [enter, reset, toggle]),
+        extra,
+      ]));
+    });
+  }
+
+  function initPlatform() {
+    var f = $('newshop-form');
+    var slugTouched = false;
+    f.elements.slug.addEventListener('input', function () { slugTouched = true; });
+    f.elements.name.addEventListener('input', function () { if (!slugTouched) f.elements.slug.value = slugify(f.elements.name.value); });
+    f.addEventListener('submit', function (e) {
+      e.preventDefault();
+      $('newshop-error').hidden = true;
+      var body = { name: f.elements.name.value, slug: f.elements.slug.value, type: f.elements.type.value, ownerUsername: f.elements.ownerUsername.value };
+      api('/platform/shops', { method: 'POST', body: body })
+        .then(function (res) {
+          var box = $('newshop-result');
+          box.innerHTML = '';
+          box.appendChild(credentialsBox('Negozio "' + res.business.name + '" creato', res.business.slug, res.owner));
+          box.hidden = false;
+          f.reset(); slugTouched = false;
+          loadPlatform();
+        })
+        .catch(function (err) { $('newshop-error').textContent = err.message; $('newshop-error').hidden = false; });
+    });
+  }
+
+  /* =================================================================== */
   /* Avvio                                                               */
   /* =================================================================== */
 
@@ -727,18 +996,9 @@
       api('/logout', { method: 'POST', body: {} }).finally(function () { window.location.href = '/admin/login'; });
     });
 
-    api('/me').then(function (me) { $('admin-user').textContent = me.username; });
-    fetch('/api/business').then(function (r) { return r.json(); }).then(function (b) {
-      $('business-name').textContent = b.name;
-      document.title = 'Gestione · ' + b.name;
-      if (b.locale) LOCALE = b.locale;
-      if (b.currency) CURRENCY = b.currency;
-      if (b.logo) $('business-logo').src = b.logo;
-      if (b.primaryColor) document.documentElement.style.setProperty('--primary', b.primaryColor);
-      if (b.accentColor) document.documentElement.style.setProperty('--accent', b.accentColor);
-    }).catch(function () {});
-
-    showTab('calendar');
+    initShopForm();
+    initPlatform();
+    loadMe().then(function () { showTab('calendar'); });
   }
 
   init();

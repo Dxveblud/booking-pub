@@ -8,7 +8,6 @@
  */
 const { SlotLock } = require('../models');
 const { LOCK_UNIT_MINUTES } = require('../models/SlotLock');
-const config = require('../config');
 const { conflict } = require('../utils/errors');
 
 const DUPLICATE_KEY = 11000;
@@ -28,8 +27,7 @@ const keyId = (k) => `${k.date}|${k.minute}`;
  * I blocchi già posseduti dalla stessa prenotazione (in caso di modifica)
  * vengono riutilizzati; quelli non più necessari vengono liberati.
  */
-async function acquire(bookingId, date, start, end) {
-  const businessId = config.business.id;
+async function acquire(businessId, bookingId, date, start, end) {
   const wanted = keysFor(date, start, end);
   const owned = await SlotLock.find({ bookingId }, { date: 1, minute: 1 }).lean();
   const ownedIds = new Set(owned.map(keyId));

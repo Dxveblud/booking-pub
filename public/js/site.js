@@ -8,8 +8,27 @@
   var DAYS = ['Domenica', 'Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato'];
   var WEEK_ORDER = [1, 2, 3, 4, 5, 6, 0];
 
+  // Pagina di un negozio: /s/<codice>. In "/" si usa il negozio predefinito.
+  var match = window.location.pathname.match(/^\/s\/([a-z0-9-]+)\/?$/);
+  var SHOP = match ? match[1] : '';
+  // Il widget (caricato subito dopo questo file) deve aprire lo stesso negozio
+  var widgetScript = document.querySelector('script[src*="widget/widget.js"]');
+  if (widgetScript && SHOP) widgetScript.setAttribute('data-shop', SHOP);
+
+
+  /** Logo di ripiego: l'iniziale del negozio nei suoi colori. */
+  function monogram(name, color) {
+    var letter = (String(name || '').trim().charAt(0) || '•').toUpperCase().replace(/[^A-Z0-9À-Ý]/, '•');
+    var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="' + (color || '#1c1917') +
+      '"/><text x="32" y="43" font-family="Georgia,serif" font-size="32" fill="#fff" text-anchor="middle">' + letter + '</text></svg>';
+    return 'data:image/svg+xml,' + encodeURIComponent(svg);
+  }
+
   function $(id) { return document.getElementById(id); }
-  function getJson(url) { return fetch(url).then(function (r) { if (!r.ok) throw new Error(url); return r.json(); }); }
+  function getJson(url) {
+    if (SHOP) url += (url.indexOf('?') >= 0 ? '&' : '?') + 'shop=' + encodeURIComponent(SHOP);
+    return fetch(url).then(function (r) { if (!r.ok) throw new Error(url); return r.json(); });
+  }
   function text(id, value) { var n = $(id); if (n) n.textContent = value || ''; }
   function el(tag, cls, txt) {
     var n = document.createElement(tag);
@@ -39,7 +58,9 @@
     text('biz-address', b.address);
     text('biz-footer', b.address + (b.phone ? ' · ' + b.phone : ''));
     if (b.address) text('hero-eyebrow', 'Su appuntamento · ' + (b.mapsQuery || b.address.split(',').pop().trim()));
-    if (b.logo) { $('biz-logo').src = b.logo; }
+    var logo = b.logo || monogram(b.name, b.primaryColor);
+    $('biz-logo').src = logo;
+    document.querySelectorAll('.brand-footer img').forEach(function (img) { img.src = logo; });
     if (b.phone) {
       var tel = 'tel:' + b.phone.replace(/[^+\d]/g, '');
       $('biz-phone').textContent = b.phone; $('biz-phone').href = tel; $('hero-call').href = tel;
@@ -58,6 +79,8 @@
     if (site.heroImage) $('hero').style.backgroundImage = 'url("' + site.heroImage + '")';
     if (site.aboutImage) { $('about-img').src = site.aboutImage; $('about-img').alt = b.name; $('about-img').hidden = false; }
     if (site.aboutTitle) text('about-title', site.aboutTitle);
+    if (!b.description && !site.aboutImage) $('chi-siamo').hidden = true;
+    if (!site.aboutImage) $('chi-siamo').classList.add('no-photo');
 
     var hl = $('highlights');
     (site.highlights || []).forEach(function (h, i) {
@@ -156,5 +179,14 @@
         renderHours(res[1], b);
       });
     })
-    .catch(function (err) { console.error('Errore nel caricamento dei dati', err); });
+    .catch(function (err) {
+      console.error('Errore nel caricamento dei dati', err);
+      text('biz-name', 'Pagina non disponibile');
+      text('hero-eyebrow', '');
+      text('biz-name-header', '');
+      $('biz-logo').hidden = true;
+      $('hero-call').hidden = true;
+      text('biz-tagline', 'Questo negozio non esiste o non è più attivo.');
+      document.querySelectorAll('[data-booking-open]').forEach(function (b) { b.hidden = true; });
+    });
 })();

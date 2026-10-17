@@ -14,6 +14,23 @@ Stack: Node.js + Express, MongoDB (Mongoose), frontend HTML/CSS/JS vanilla, mobi
 
 ---
 
+## Una piattaforma, tanti negozi
+
+Un solo server serve **tutti i clienti**. Ogni negozio ha:
+- un **codice** (es. `barberia-mario`) da mettere nel widget: `<script src="https://booking.dxveblud.dev/widget/widget.js" data-shop="barberia-mario" defer></script>`;
+- la sua **pagina pronta** per chi non ha un sito: `https://booking.dxveblud.dev/s/barberia-mario`;
+- il suo **pannello** (`/admin`) con username e password propri: il titolare vede solo le sue prenotazioni, i suoi servizi e i suoi orari;
+- nome, testi, colori, logo e foto propri, modificabili dalla sezione **Negozio** del pannello (dove trova anche il codice da incollare nel sito).
+
+Tu entri come **super admin** e nella sezione **Negozi** puoi:
+- creare un negozio (nome, tipo di attività → servizi e orari di partenza, codice) e ricevere le credenziali da mandare al cliente;
+- entrare nel pannello di qualunque negozio per assistenza (**Gestisci**);
+- generare una nuova password per un titolare o disattivare un negozio (widget e pagina smettono di accettare prenotazioni).
+
+Il negozio definito in `config.json` (`business.id`, qui la demo "Barberia Novecento") è quello predefinito: risponde su `/` e al widget senza `data-shop`. Il primo admin (da `ADMIN_USERNAME`/`ADMIN_PASSWORD`, o quello già esistente nelle installazioni precedenti) diventa il super admin.
+
+Logo e foto caricati dai negozi vengono salvati in `uploads/` (configurabile con `UPLOAD_DIR`): in caso di backup ricordati di copiare anche quella cartella.
+
 ## Indice
 
 - [Funzionalità](#funzionalità)
@@ -142,6 +159,7 @@ Vedi [`.env.example`](.env.example). Le principali:
 | `ADMIN_USERNAME` / `ADMIN_PASSWORD` | Primo amministratore, creato solo se non ne esiste nessuno |
 | `WIDGET_ALLOWED_ORIGINS` | Siti autorizzati a incorporare il widget (`*` = tutti) |
 | `BOOKING_RATE_LIMIT` | Prenotazioni online per IP ogni 15 minuti (default 10) |
+| `UPLOAD_DIR` | Cartella per logo e foto caricati dai negozi (default `uploads/`) |
 
 ---
 
@@ -346,9 +364,11 @@ Convenzione su date e orari: le date sono stringhe `YYYY-MM-DD` e gli orari minu
 
 ### Pubbliche (`/api`)
 
+Ogni chiamata indica il negozio con `?shop=<codice>` (senza, si usa il negozio predefinito).
+
 | Metodo | Percorso | Descrizione |
 |---|---|---|
-| GET | `/api/business` | Dati dell'attività |
+| GET | `/api/business` | Dati del negozio |
 | GET | `/api/services` | Servizi attivi |
 | GET | `/api/opening-hours` | Orari di apertura settimanali |
 | GET | `/api/availability/days?serviceId=…` | Giorni prenotabili con numero di orari liberi |
@@ -368,6 +388,12 @@ Convenzione su date e orari: le date sono stringhe `YYYY-MM-DD` e gli orari minu
 | GET/POST | `/blocks?from=&to=` | Elenco / creazione `{ fromDate, toDate, allDay, start, end, reason }` |
 | DELETE | `/blocks/:id` | Rimozione |
 | GET/PUT | `/settings` | Orari di apertura e regole |
+| GET/PUT | `/business` | Dati, colori e foto del negozio |
+| POST | `/uploads` | Carica un'immagine (corpo binario, `Content-Type: image/jpeg|png|webp|gif`) |
+| GET/POST | `/platform/shops` | *(super admin)* Elenco / creazione negozi |
+| PUT | `/platform/shops/:codice` | *(super admin)* Attiva/disattiva, note |
+| POST | `/platform/shops/:codice/enter` | *(super admin)* Gestisci quel negozio |
+| POST | `/platform/shops/:codice/reset-password` | *(super admin)* Nuova password del titolare |
 
 Gli errori hanno sempre il formato `{ "error": { "code": "SLOT_TAKEN", "message": "…" } }`.
 
@@ -406,8 +432,9 @@ Le integrazioni si limitano ad "ascoltarli", quindi aggiungerle non richiede di 
 
 Le variabili d'ambiente previste sono già elencate (commentate) in `.env.example`.
 
-### Più attività su un solo server
-Oggi ogni deploy serve una sola attività. Tutti i documenti hanno però già un campo `businessId` (preso da `config.json → business.id`), e gli indici univoci lo includono. Per passare a un modello multi-attività bisognerà ricavare `businessId` dalla richiesta (es. `data-business` nel widget o sottodominio) invece che dalla configurazione, e spostare i dati di `config.json` in una collezione `Business`.
+### Possibili evoluzioni
+- **Dominio personalizzato per negozio** (es. `prenota.barberiamario.it` invece di `/s/barberia-mario`): aggiungere un campo `domains` al negozio, risolverlo dall'header `Host` e il sito a Caddy.
+- **Più collaboratori per negozio** (es. due barbieri con agende separate): un modello `Staff` e il lucchetto degli orari per collaboratore.
 
 ---
 

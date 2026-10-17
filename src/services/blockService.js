@@ -3,11 +3,9 @@
  */
 const mongoose = require('mongoose');
 const { Block, Booking } = require('../models');
-const config = require('../config');
 const { addDays, diffDays, isValidDate, isValidTime, toMinutes, fromMinutes } = require('../utils/time');
 const { badRequest, notFound } = require('../utils/errors');
 
-const businessId = config.business.id;
 const MAX_RANGE_DAYS = 366;
 
 function serializeBlock(b) {
@@ -21,7 +19,7 @@ function serializeBlock(b) {
   };
 }
 
-function listBlocks({ from, to }) {
+function listBlocks(businessId, { from, to }) {
   if (!isValidDate(from) || !isValidDate(to)) throw badRequest('Intervallo di date non valido');
   return Block.find({ businessId, date: { $gte: from, $lte: to } }).sort({ date: 1, startMinutes: 1 });
 }
@@ -33,7 +31,7 @@ function listBlocks({ from, to }) {
  *
  * @param {object} body { fromDate, toDate?, allDay, start?, end?, reason? }
  */
-async function createBlocks(body) {
+async function createBlocks(businessId, body) {
   const fromDate = body.fromDate;
   const toDate = body.toDate || body.fromDate;
   if (!isValidDate(fromDate) || !isValidDate(toDate)) throw badRequest('Date non valide');
@@ -68,7 +66,7 @@ async function createBlocks(body) {
   return { blocks, conflicts };
 }
 
-async function deleteBlock(id) {
+async function deleteBlock(businessId, id) {
   if (!mongoose.isValidObjectId(id)) throw notFound('Blocco non trovato');
   const res = await Block.deleteOne({ _id: id, businessId });
   if (!res.deletedCount) throw notFound('Blocco non trovato');

@@ -8,14 +8,12 @@
  */
 const mongoose = require('mongoose');
 const { Booking, Service } = require('../models');
-const config = require('../config');
 const slotLocks = require('./slotLocks');
 const { getAvailability } = require('./availability');
 const { BOOKING_EVENTS, emitBookingEvent } = require('./events');
 const { toMinutes, fromMinutes, isValidDate, isValidTime } = require('../utils/time');
 const { badRequest, notFound, conflict } = require('../utils/errors');
 
-const businessId = config.business.id;
 const PHONE_RE = /^\+?[0-9\s().-]{6,20}$/;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -39,7 +37,7 @@ function parseDateTime({ date, time }) {
   return { date, start: toMinutes(time) };
 }
 
-async function findService(serviceId, { onlyActive }) {
+async function findService(businessId, serviceId, { onlyActive }) {
   if (!mongoose.isValidObjectId(serviceId)) throw badRequest('Servizio non valido');
   const query = { _id: serviceId, businessId };
   if (onlyActive) query.active = true;
@@ -49,8 +47,8 @@ async function findService(serviceId, { onlyActive }) {
 }
 
 /** Controlla che l'orario sia tra quelli prenotabili online. */
-async function assertPubliclyAvailable(service, date, start, excludeBookingId) {
-  const availability = await getAvailability(service, date, date, { excludeBookingId });
+async function assertPubliclyAvailable(business, service, date, start, excludeBookingId) {
+  const availability = await getAvailability(business, service, date, date, { excludeBookingId });
   const slots = availability.get(date) || [];
   if (!slots.includes(start)) {
     throw conflict("L'orario scelto non è disponibile", 'SLOT_UNAVAILABLE');
@@ -98,23 +96,25 @@ function serializePublicBooking(b) {
 
 /**
  * Crea una prenotazione.
+ * @param {object} business negozio ({ slug, timezone })
  * @param {object} input  { serviceId, date, time, customer:{name,phone,email}, notes }
  * @param {object} opts   { source: 'online' | 'admin', isDemo, silent }
  *                        silent: non emette eventi (niente notifiche/sync)
  */
-async function createBooking(input, { source = 'online', isDemo = false, silent = false } = {}) {
+async function createBooking(business, input, { source = 'online', isDemo = false, silent = false } = {}) {
+  const businessId = business.slug;
   const isOnline = source === 'online';
-  const service = await findService(input.serviceId, { onlyActive: isOnline });
+  const service = await findService(businessId, input.serviceId, { onlyActive: isOnline });
   const { date, start } = parseDateTime(input);
   const end = start + service.durationMinutes;
   if (end > 1440) throw badRequest('Il servizio terminerebbe dopo la mezzanotte');
   const customer = parseCustomer(input.customer);
 
-  if (isOnline) await assertPubliclyAvailable(service, date, start);
+  if (isOnline) await assertPubliclyAvailable(business, service, date, start);
 
   // 1) riserva gli orari (fallisce con 409 se già occupati)
   const bookingId = new mongoose.Types.ObjectId();
-  await slotLocks.acquire(bookingId, date, start, end);
+  await slotLocks.acquire(businessId, bookingId, date, start, end);
 
   // 2) salva la prenotazione; se fallisce libera gli orari
   let booking;
@@ -144,7 +144,8 @@ async function createBooking(input, { source = 'online', isDemo = false, silent 
 }
 
 /** Modifica una prenotazione esistente (solo admin). */
-async function updateBooking(id, input) {
+async function updateBooking(business, id, input) {
+  const businessId = business.slug;
   if (!mongoose.isValidObjectId(id)) throw notFound('Prenotazione non trovata');
   const booking = await Booking.findOne({ _id: id, businessId });
   if (!booking) throw notFound('Prenotazione non trovata');
@@ -153,7 +154,7 @@ async function updateBooking(id, input) {
 
   // Servizio: se cambia, aggiorna i dati copiati
   if (input.serviceId && String(input.serviceId) !== String(booking.serviceId)) {
-    const service = await findService(input.serviceId, { onlyActive: false });
+    const service = await findService(businessId, input.serviceId, { onlyActive: false });
     booking.serviceId = service._id;
     booking.serviceName = service.name;
     booking.durationMinutes = service.durationMinutes;
@@ -170,7 +171,7 @@ async function updateBooking(id, input) {
   if (input.notes !== undefined) booking.notes = String(input.notes || '').trim().slice(0, 500);
 
   // Riserva il nuovo intervallo (riusa i blocchi già posseduti, libera i vecchi)
-  await slotLocks.acquire(booking._id, date, start, end);
+  await slotLocks.acquire(businessId, booking._id, date, start, end);
   booking.date = date;
   booking.startMinutes = start;
   booking.endMinutes = end;
@@ -179,7 +180,7 @@ async function updateBooking(id, input) {
     await booking.save();
   } catch (err) {
     // Ripristina i lucchetti dell'orario originale
-    await slotLocks.acquire(booking._id, previous.date, previous.startMinutes, previous.endMinutes).catch(() => {});
+    await slotLocks.acquire(businessId, booking._id, previous.date, previous.startMinutes, previous.endMinutes).catch(() => {});
     throw err;
   }
 
@@ -188,7 +189,8 @@ async function updateBooking(id, input) {
 }
 
 /** Cancella una prenotazione: resta nello storico ma libera l'orario. */
-async function cancelBooking(id) {
+async function cancelBooking(business, id) {
+  const businessId = business.slug;
   if (!mongoose.isValidObjectId(id)) throw notFound('Prenotazione non trovata');
   const booking = await Booking.findOne({ _id: id, businessId });
   if (!booking) throw notFound('Prenotazione non trovata');
@@ -203,7 +205,8 @@ async function cancelBooking(id) {
   return booking;
 }
 
-async function listBookings({ from, to, includeCancelled = false }) {
+async function listBookings(business, { from, to, includeCancelled = false }) {
+  const businessId = business.slug;
   if (!isValidDate(from) || !isValidDate(to)) throw badRequest('Intervallo di date non valido');
   const query = { businessId, date: { $gte: from, $lte: to } };
   if (!includeCancelled) query.status = 'confirmed';

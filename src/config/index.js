@@ -33,6 +33,8 @@ const env = {
   sessionSecret: process.env.SESSION_SECRET || '',
   adminUsername: process.env.ADMIN_USERNAME || '',
   adminPassword: process.env.ADMIN_PASSWORD || '',
+  // Cartella dove salvare logo e foto caricati dai negozi
+  uploadDir: path.resolve(ROOT, process.env.UPLOAD_DIR || 'uploads'),
   // Prenotazioni online consentite per IP ogni 15 minuti (anti-spam)
   bookingRateLimit: Number(process.env.BOOKING_RATE_LIMIT) || 10,
   // Elenco di origini che possono incorporare il widget (CSP frame-ancestors)

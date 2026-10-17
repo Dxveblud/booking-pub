@@ -14,6 +14,10 @@ function errorHandler(err, req, res, next) {
     const message = Object.values(err.errors).map((e) => e.message).join('; ');
     return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message } });
   }
+  // File caricato troppo grande
+  if (err.type === 'entity.too.large') {
+    return res.status(413).json({ error: { code: 'TOO_LARGE', message: 'File troppo grande (massimo 5 MB)' } });
+  }
   // JSON malformato nel body
   if (err.type === 'entity.parse.failed') {
     return res.status(400).json({ error: { code: 'BAD_JSON', message: 'JSON non valido' } });

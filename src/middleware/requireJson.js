@@ -5,6 +5,8 @@
  * (DELETE non è inviabile da un form HTML, quindi è già protetto.)
  */
 function requireJson(req, res, next) {
+  // Unica eccezione: il caricamento delle immagini (corpo binario)
+  if (req.path === '/uploads' && req.is('image/*')) return next();
   if (['POST', 'PUT', 'PATCH'].includes(req.method) && !req.is('application/json')) {
     return res.status(415).json({ error: { code: 'UNSUPPORTED_MEDIA_TYPE', message: 'Usa Content-Type: application/json' } });
   }

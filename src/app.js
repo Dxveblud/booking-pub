@@ -99,6 +99,12 @@ function createApp() {
     res.sendFile(path.join(PUBLIC_DIR, 'admin', 'index.html'));
   });
 
+  // Pagina pubblica di ogni negozio: /s/<codice> (stesso HTML, i dati arrivano dall'API)
+  app.get('/s/:slug', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'index.html')));
+
+  // Logo e foto caricati dai negozi (nomi casuali: si possono tenere in cache a lungo)
+  app.use('/uploads', express.static(config.env.uploadDir, { index: false, maxAge: '30d', immutable: true }));
+
   // La pagina admin si raggiunge solo da /admin (che verifica il login)
   app.get('/admin/index.html', (req, res) => res.redirect('/admin'));
 

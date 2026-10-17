@@ -3,10 +3,7 @@
  */
 const mongoose = require('mongoose');
 const { Service } = require('../models');
-const config = require('../config');
 const { badRequest, notFound } = require('../utils/errors');
-
-const businessId = config.business.id;
 
 function serializeService(s) {
   return {
@@ -44,17 +41,17 @@ function parseServiceInput(body, { partial = false } = {}) {
   return data;
 }
 
-function listServices({ onlyActive = false } = {}) {
+function listServices(businessId, { onlyActive = false } = {}) {
   const query = { businessId };
   if (onlyActive) query.active = true;
   return Service.find(query).sort({ sortOrder: 1, name: 1 });
 }
 
-async function createService(body) {
+async function createService(businessId, body) {
   return Service.create({ businessId, ...parseServiceInput(body) });
 }
 
-async function updateService(id, body) {
+async function updateService(businessId, id, body) {
   if (!mongoose.isValidObjectId(id)) throw notFound('Servizio non trovato');
   const service = await Service.findOne({ _id: id, businessId });
   if (!service) throw notFound('Servizio non trovato');
@@ -67,7 +64,7 @@ async function updateService(id, body) {
  * Elimina un servizio. Le prenotazioni esistenti non vengono toccate perché
  * contengono già una copia di nome, durata e prezzo.
  */
-async function deleteService(id) {
+async function deleteService(businessId, id) {
   if (!mongoose.isValidObjectId(id)) throw notFound('Servizio non trovato');
   const res = await Service.deleteOne({ _id: id, businessId });
   if (!res.deletedCount) throw notFound('Servizio non trovato');

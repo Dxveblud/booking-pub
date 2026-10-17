@@ -1,18 +1,30 @@
 /**
- * Operazioni eseguite all'avvio: impostazioni di default, servizi di esempio
- * (solo se il catalogo è vuoto) e admin iniziale.
+ * Operazioni eseguite all'avvio:
+ *  - il negozio predefinito (config.json → business) esiste nel database;
+ *  - impostazioni e servizi di esempio del negozio predefinito;
+ *  - super admin della piattaforma.
  */
-const { Service } = require('../models');
+const { Business, Service, AdminUser } = require('../models');
 const config = require('../config');
 const { getSettings } = require('./settingsService');
-const { ensureInitialAdmin } = require('./adminService');
+const { ensurePlatformAdmin } = require('./adminService');
 
-async function seedDefaultServices() {
-  const businessId = config.business.id;
+/** Il negozio predefinito, creato da config.json al primo avvio. */
+async function ensureDefaultBusiness() {
+  const slug = config.business.id;
+  let doc = await Business.findOne({ slug });
+  if (doc) return doc;
+  const { id, ...fields } = config.business;
+  doc = await Business.create({ ...fields, slug, site: config.site });
+  console.log(`[bootstrap] Creato il negozio predefinito "${slug}"`);
+  return doc;
+}
+
+async function seedDefaultServices(businessId = config.business.id, services = config.defaults.services) {
   const count = await Service.countDocuments({ businessId });
-  if (count > 0 || !config.defaults.services.length) return 0;
+  if (count > 0 || !services.length) return 0;
   await Service.insertMany(
-    config.defaults.services.map((s, i) => ({
+    services.map((s, i) => ({
       businessId,
       name: s.name,
       description: s.description || '',
@@ -21,14 +33,17 @@ async function seedDefaultServices() {
       sortOrder: i,
     }))
   );
-  return config.defaults.services.length;
+  return services.length;
 }
 
 async function bootstrap() {
-  await getSettings(); // crea il documento se manca
+  // Indici: lo username ora è unico su tutta la piattaforma (vedi AdminUser)
+  await AdminUser.syncIndexes().catch((err) => console.warn('[bootstrap] Indici admin:', err.message));
+  await ensureDefaultBusiness();
+  await getSettings(config.business.id); // crea il documento se manca
   const seeded = await seedDefaultServices();
   if (seeded) console.log(`[bootstrap] Creati ${seeded} servizi di esempio da config.json`);
-  await ensureInitialAdmin();
+  await ensurePlatformAdmin();
 }
 
-module.exports = { bootstrap, seedDefaultServices };
+module.exports = { bootstrap, seedDefaultServices, ensureDefaultBusiness };

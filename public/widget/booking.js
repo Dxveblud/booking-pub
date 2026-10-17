@@ -18,10 +18,20 @@
   var PROGRESS = { service: 0, day: 1, time: 2, details: 3, confirm: 4, done: 4 };
 
   var params = new URLSearchParams(window.location.search);
+  var SHOP = params.get('shop') || '';
   var isEmbedded = window.parent !== window;
   var state = { business: null, services: [], hours: {}, service: null, date: null, time: null, customer: null, booking: null, step: 'service' };
 
   var $ = function (id) { return document.getElementById(id); };
+
+  /** Logo di ripiego: l'iniziale del negozio nei suoi colori. */
+  function monogram(name, color) {
+    var letter = (String(name || '').trim().charAt(0) || '•').toUpperCase().replace(/[^A-Z0-9À-Ý]/, '•');
+    var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="' + (color || '#1c1917') +
+      '"/><text x="32" y="43" font-family="Georgia,serif" font-size="32" fill="#fff" text-anchor="middle">' + letter + '</text></svg>';
+    return 'data:image/svg+xml,' + encodeURIComponent(svg);
+  }
+
 
   /* ----------------------------- Utility ------------------------------ */
 
@@ -32,7 +42,9 @@
       init.headers['Content-Type'] = 'application/json';
       init.body = JSON.stringify(options.body);
     }
-    return fetch('/api' + path, init).then(function (res) {
+    // Ogni chiamata indica il negozio (?shop=…)
+    var url = '/api' + path + (SHOP ? (path.indexOf('?') >= 0 ? '&' : '?') + 'shop=' + encodeURIComponent(SHOP) : '');
+    return fetch(url, init).then(function (res) {
       return res.json().catch(function () { return {}; }).then(function (data) {
         if (!res.ok) {
           var err = new Error((data.error && data.error.message) || 'Errore di rete, riprova.');
@@ -350,7 +362,7 @@
   function applyBranding(b) {
     $('bk-business').textContent = b.name;
     document.title = 'Prenota · ' + b.name;
-    if (b.logo) $('bk-logo').src = b.logo;
+    $('bk-logo').src = b.logo || monogram(b.name, b.primaryColor);
     var root = document.documentElement.style;
     if (b.primaryColor) root.setProperty('--ink', b.primaryColor);
     if (b.accentColor) root.setProperty('--accent', b.accentColor);
@@ -386,9 +398,12 @@
         if (pre) return selectService(pre);
         return null;
       })
-      .catch(function () {
+      .catch(function (err) {
         $('bk-services').innerHTML = '';
-        $('bk-services').appendChild(el('li', { class: 'bk-empty', text: 'Impossibile caricare i servizi. Riprova tra poco.' }));
+        var msg = err.code === 'SHOP_NOT_FOUND'
+          ? 'Le prenotazioni online per questo negozio non sono attive.'
+          : 'Impossibile caricare i servizi. Riprova tra poco.';
+        $('bk-services').appendChild(el('li', { class: 'bk-empty', text: msg }));
       })
       .finally(function () { setLoading(false); });
   }

@@ -5,7 +5,6 @@
  * testare; `getAvailability` raccoglie i dati da MongoDB e la richiama.
  */
 const { Booking, Block } = require('../models');
-const config = require('../config');
 const { getSettings } = require('./settingsService');
 const { addDays, weekdayOf, nowInTimezone, overlaps, diffDays } = require('../utils/time');
 
@@ -45,8 +44,7 @@ function earliestBookable(now, minNoticeMinutes) {
 }
 
 /** Prenotazioni confermate e blocchi in un intervallo di date, raggruppati per giorno. */
-async function loadBusyByDate(fromDate, toDate, { excludeBookingId } = {}) {
-  const businessId = config.business.id;
+async function loadBusyByDate(businessId, fromDate, toDate, { excludeBookingId } = {}) {
   const bookingQuery = { businessId, status: 'confirmed', date: { $gte: fromDate, $lte: toDate } };
   if (excludeBookingId) bookingQuery._id = { $ne: excludeBookingId };
 
@@ -67,11 +65,12 @@ async function loadBusyByDate(fromDate, toDate, { excludeBookingId } = {}) {
  * Orari disponibili per un servizio in un intervallo di date (regole "online":
  * apertura, blocchi, preavviso minimo, giorni massimi in anticipo).
  *
+ * @param {{slug:string, timezone:string}} business  negozio
  * @returns {Promise<Map<string, number[]>>} data → minuti di inizio
  */
-async function getAvailability(service, fromDate, toDate, options = {}) {
-  const settings = await getSettings();
-  const now = nowInTimezone(config.business.timezone);
+async function getAvailability(business, service, fromDate, toDate, options = {}) {
+  const settings = await getSettings(business.slug);
+  const now = nowInTimezone(business.timezone);
   const earliest = earliestBookable(now, settings.minNoticeMinutes);
   const lastDate = addDays(now.date, settings.maxDaysAhead);
 
@@ -81,7 +80,7 @@ async function getAvailability(service, fromDate, toDate, options = {}) {
   const result = new Map();
   if (from > to) return result;
 
-  const busyByDate = await loadBusyByDate(from, to, options);
+  const busyByDate = await loadBusyByDate(business.slug, from, to, options);
   const days = diffDays(from, to);
   for (let i = 0; i <= days; i += 1) {
     const date = addDays(from, i);

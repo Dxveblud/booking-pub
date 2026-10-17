@@ -1,0 +1,57 @@
+/* Sito template — mobile-first. Il colore principale arriva da config.json. */
+:root {
+  --primary: #1f6f5c;
+  --text: #1b2228;
+  --muted: #5d6973;
+  --bg: #ffffff;
+  --surface: #f4f6f7;
+  --border: #e1e5e8;
+  --radius: 14px;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color: var(--text);
+  line-height: 1.55;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); }
+img { max-width: 100%; }
+a { color: var(--primary); }
+h1, h2 { line-height: 1.2; }
+h2 { font-size: 1.4rem; margin: 0 0 16px; }
+
+.container { width: 100%; max-width: 960px; margin: 0 auto; padding: 0 16px; }
+.section { padding: 40px 16px; }
+
+.btn { display: inline-block; border: 0; border-radius: 999px; background: var(--primary); color: #fff;
+  font: 700 1rem/1 inherit; font-family: inherit; padding: 14px 24px; cursor: pointer; text-decoration: none; }
+.btn:hover { filter: brightness(1.08); }
+.btn-small { padding: 10px 16px; font-size: .9rem; }
+.btn-large { padding: 16px 32px; font-size: 1.1rem; }
+
+.site-header { position: sticky; top: 0; z-index: 10; background: rgba(255,255,255,.92); backdrop-filter: blur(8px); border-bottom: 1px solid var(--border); }
+.header-inner { display: flex; align-items: center; justify-content: space-between; height: 64px; }
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 700; color: var(--text); text-decoration: none; }
+.brand img { width: 40px; height: 40px; object-fit: contain; border-radius: 8px; }
+
+.hero { padding: 56px 0; text-align: center; background: linear-gradient(180deg, color-mix(in srgb, var(--primary) 12%, #fff), #fff); }
+.hero h1 { font-size: clamp(2rem, 7vw, 3.2rem); margin: 0 0 8px; }
+.tagline { color: var(--muted); font-size: 1.15rem; margin: 0 0 28px; }
+.lead { font-size: 1.05rem; color: var(--muted); max-width: 70ch; }
+
+.services { list-style: none; padding: 0; margin: 0; display: grid; gap: 12px; }
+.services li { display: flex; justify-content: space-between; gap: 16px; padding: 16px; border: 1px solid var(--border); border-radius: var(--radius); }
+.services .name { font-weight: 600; }
+.services .meta { color: var(--muted); font-size: .9rem; }
+.services .price { font-weight: 700; white-space: nowrap; }
+
+.info-grid { display: grid; gap: 32px; }
+.hours { display: grid; grid-template-columns: auto 1fr; gap: 6px 16px; margin: 0; }
+.hours dt { font-weight: 600; }
+.hours dd { margin: 0; color: var(--muted); }
+
+.site-footer { border-top: 1px solid var(--border); padding: 24px 0; color: var(--muted); font-size: .9rem; text-align: center; }
+
+@media (min-width: 720px) {
+  .services { grid-template-columns: 1fr 1fr; }
+  .info-grid { grid-template-columns: 1fr 1fr; }
+  .hero { padding: 96px 0; }
+}

@@ -1,0 +1,124 @@
+/* Pannello admin — mobile-first */
+:root {
+  --primary: #1f6f5c;
+  --primary-soft: #e3f1ed;
+  --text: #1b2228;
+  --muted: #66727c;
+  --bg: #f4f6f7;
+  --card: #ffffff;
+  --border: #dde2e5;
+  --danger: #c0392b;
+  --closed: #eef0f2;
+  --block: #f6e3e1;
+  --radius: 10px;
+  --hour-height: 64px;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color: var(--text);
+  font-size: 15px;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); }
+[hidden] { display: none !important; }
+h1, h2 { margin: 0 0 12px; }
+h2 { font-size: 1.1rem; }
+.muted { color: var(--muted); }
+.small { font-size: .85rem; }
+.error { color: var(--danger); margin: 8px 0; }
+.mt { margin-top: 24px; }
+
+/* ----------------------------- Pulsanti ----------------------------- */
+.btn { font: inherit; padding: 9px 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--card); color: var(--text); cursor: pointer; white-space: nowrap; }
+.btn:hover { background: var(--bg); }
+.btn-primary { background: var(--primary); border-color: var(--primary); color: #fff; font-weight: 600; }
+.btn-primary:hover { background: var(--primary); filter: brightness(1.08); }
+.btn-danger { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 40%, var(--border)); }
+.btn-ghost { border-color: transparent; background: transparent; }
+.btn-block { width: 100%; }
+.btn-small { padding: 5px 10px; font-size: .85rem; }
+.btn:disabled { opacity: .6; cursor: wait; }
+.btn-group { display: inline-flex; }
+.btn-group .btn { border-radius: 0; margin-left: -1px; }
+.btn-group .btn:first-child { border-radius: 8px 0 0 8px; margin-left: 0; }
+.btn-group .btn:last-child { border-radius: 0 8px 8px 0; }
+.view-btn.active { background: var(--primary-soft); border-color: var(--primary); color: var(--primary); font-weight: 600; z-index: 1; }
+
+/* ------------------------------ Layout ------------------------------ */
+.topbar { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: var(--card); border-bottom: 1px solid var(--border); }
+.topbar-right { display: flex; align-items: center; gap: 8px; }
+.tabs { display: flex; gap: 4px; overflow-x: auto; padding: 0 12px; background: var(--card); border-bottom: 1px solid var(--border); }
+.tab { font: inherit; padding: 12px 14px; border: 0; border-bottom: 3px solid transparent; background: none; color: var(--muted); cursor: pointer; white-space: nowrap; }
+.tab.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 600; }
+.content { padding: 16px; max-width: 1280px; margin: 0 auto; }
+.card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 16px; }
+
+/* ------------------------------- Form ------------------------------- */
+.field { display: block; margin-bottom: 12px; }
+.field > span { display: block; font-size: .85rem; font-weight: 600; margin-bottom: 4px; }
+.field small { font-weight: 400; color: var(--muted); }
+.field input, .field select, .field textarea { width: 100%; font: inherit; font-size: 16px; padding: 9px 10px; border: 1px solid var(--border); border-radius: 8px; background: #fff; color: var(--text); }
+.field input:focus, .field select:focus, .field textarea:focus { outline: 2px solid color-mix(in srgb, var(--primary) 40%, transparent); border-color: var(--primary); }
+.checkbox { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.grid-2, .grid-3 { display: grid; gap: 0 12px; }
+
+/* ----------------------------- Calendario --------------------------- */
+.toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 12px; }
+.cal-label { flex: 1 1 100%; order: -1; margin: 0; font-size: 1.15rem; text-transform: capitalize; }
+.calendar-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); overflow: auto; max-height: calc(100vh - 230px); }
+.calendar { display: grid; grid-template-columns: 52px repeat(var(--days, 7), minmax(var(--col-min, 120px), 1fr)); position: relative; }
+.cal-head { position: sticky; top: 0; z-index: 3; background: var(--card); border-bottom: 1px solid var(--border); padding: 8px 4px; text-align: center; font-size: .85rem; }
+.cal-head b { display: block; font-size: 1.1rem; }
+.cal-head.today { color: var(--primary); }
+.cal-head.corner { left: 0; z-index: 4; }
+.cal-gutter { position: sticky; left: 0; z-index: 2; background: var(--card); border-right: 1px solid var(--border); }
+.cal-hour-label { position: absolute; right: 6px; font-size: .75rem; color: var(--muted); transform: translateY(-50%); }
+.cal-col { position: relative; border-left: 1px solid var(--border); background: var(--closed); cursor: copy;
+  background-image: linear-gradient(to bottom, var(--border) 1px, transparent 1px); background-size: 100% var(--hour-height); }
+.cal-open { position: absolute; left: 0; right: 0; background: #fff; pointer-events: none;
+  background-image: linear-gradient(to bottom, var(--border) 1px, transparent 1px); background-size: 100% var(--hour-height); }
+.cal-block { position: absolute; left: 2px; right: 2px; border-radius: 6px; font-size: .75rem; padding: 2px 6px; color: var(--danger); overflow: hidden; pointer-events: none;
+  background: repeating-linear-gradient(45deg, var(--block), var(--block) 6px, #fff 6px, #fff 12px); border: 1px dashed color-mix(in srgb, var(--danger) 50%, transparent); }
+.cal-event { position: absolute; left: 4px; right: 4px; z-index: 1; border-radius: 6px; padding: 3px 6px; font-size: .78rem; line-height: 1.25; overflow: hidden; cursor: pointer;
+  background: var(--primary-soft); border-left: 4px solid var(--primary); color: var(--text); text-align: left; border-top: 0; border-right: 0; border-bottom: 0; font-family: inherit; }
+.cal-event:hover { filter: brightness(.97); box-shadow: 0 2px 6px rgba(0,0,0,.12); }
+.cal-event.admin { border-left-color: #8a6d1d; background: #fbf3dc; }
+.cal-event strong { display: block; }
+.cal-now { position: absolute; left: 0; right: 0; height: 2px; background: var(--danger); z-index: 2; pointer-events: none; }
+
+/* ------------------------------- Liste ------------------------------ */
+.list { list-style: none; margin: 0; padding: 0; }
+.list li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.list li:last-child { border-bottom: 0; }
+
+.service-row { display: grid; gap: 8px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+.service-row:last-child { border-bottom: 0; }
+.service-row .field { margin: 0; }
+.service-row .actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.service-row.inactive { opacity: .6; }
+
+.day-row { padding: 10px 0; border-bottom: 1px solid var(--border); }
+.day-row-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.interval { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+.interval input { font: inherit; font-size: 16px; padding: 6px 8px; border: 1px solid var(--border); border-radius: 8px; }
+
+/* ------------------------------ Modale ------------------------------ */
+.dialog { width: min(560px, 100vw); max-height: 100vh; border: 0; border-radius: 14px; padding: 20px; }
+.dialog::backdrop { background: rgba(15, 20, 25, .5); }
+.dialog-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.spacer { flex: 1; }
+
+.toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); z-index: 100; max-width: calc(100vw - 32px);
+  background: #1b2228; color: #fff; padding: 10px 16px; border-radius: 8px; box-shadow: 0 6px 20px rgba(0,0,0,.25); }
+.toast.error { background: var(--danger); }
+
+/* ------------------------------- Login ------------------------------ */
+.login-page { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 16px; }
+.login-card { width: 100%; max-width: 360px; background: var(--card); padding: 28px 24px; border-radius: 14px; border: 1px solid var(--border); }
+
+/* ------------------------------ Desktop ----------------------------- */
+@media (min-width: 720px) {
+  .content { padding: 24px; }
+  .grid-2 { grid-template-columns: 1fr 1fr; }
+  .grid-3 { grid-template-columns: 2fr 1fr 1fr; }
+  .cal-label { flex: 1; order: 0; text-align: center; }
+  .service-row { grid-template-columns: 2fr 90px 90px 2fr auto; align-items: end; }
+}

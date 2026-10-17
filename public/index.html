@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="/img/logo.svg" type="image/svg+xml">
+  <title>Prenota online</title>
+  <meta name="description" content="Prenota online il tuo appuntamento.">
+  <link rel="stylesheet" href="/css/site.css">
+  <script src="/js/site.js" defer></script>
+  <!-- Il widget di prenotazione: lo stesso che si incorpora nei siti dei clienti -->
+  <script src="/widget/widget.js" data-mode="none" defer></script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="/">
+        <img id="biz-logo" src="/img/logo.svg" alt="" width="40" height="40">
+        <span id="biz-name-header">La tua attività</span>
+      </a>
+      <button type="button" class="btn btn-small" data-booking-open>Prenota</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="container">
+        <h1 id="biz-name">La tua attività</h1>
+        <p class="tagline" id="biz-tagline"></p>
+        <button type="button" class="btn btn-large" data-booking-open>Prenota ora</button>
+      </div>
+    </section>
+
+    <section class="container section">
+      <h2>Chi siamo</h2>
+      <p id="biz-description" class="lead"></p>
+    </section>
+
+    <section class="container section">
+      <h2>Servizi</h2>
+      <ul class="services" id="services"></ul>
+    </section>
+
+    <section class="container section info-grid">
+      <div>
+        <h2>Orari</h2>
+        <dl class="hours" id="hours"></dl>
+      </div>
+      <div>
+        <h2>Contatti</h2>
+        <p id="biz-address"></p>
+        <p><a id="biz-phone" href="#"></a></p>
+        <p><a id="biz-email" href="#"></a></p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <span id="biz-footer"></span>
+    </div>
+  </footer>
+</body>
+</html>

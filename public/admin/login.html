@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="/img/logo.svg" type="image/svg+xml">
+  <meta name="robots" content="noindex">
+  <title>Accesso amministratore</title>
+  <link rel="stylesheet" href="/admin/admin.css">
+  <script src="/admin/login.js" defer></script>
+</head>
+<body class="login-page">
+  <form class="login-card" id="login-form">
+    <h1>Area riservata</h1>
+    <p class="muted">Accedi per gestire le prenotazioni.</p>
+    <label class="field">
+      <span>Username</span>
+      <input name="username" autocomplete="username" required autofocus>
+    </label>
+    <label class="field">
+      <span>Password</span>
+      <input name="password" type="password" autocomplete="current-password" required>
+    </label>
+    <p class="error" id="login-error" hidden></p>
+    <button type="submit" class="btn btn-primary btn-block">Accedi</button>
+  </form>
+</body>
+</html>

@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="/img/logo.svg" type="image/svg+xml">
+  <meta name="robots" content="noindex">
+  <title>Gestione prenotazioni</title>
+  <link rel="stylesheet" href="/admin/admin.css">
+  <script src="/admin/admin.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <strong id="business-name">Gestione</strong>
+    <div class="topbar-right">
+      <span class="muted" id="admin-user"></span>
+      <button type="button" class="btn btn-ghost" id="logout">Esci</button>
+    </div>
+  </header>
+
+  <nav class="tabs" role="tablist">
+    <button type="button" role="tab" class="tab active" data-tab="calendar">Calendario</button>
+    <button type="button" role="tab" class="tab" data-tab="blocks">Blocchi e ferie</button>
+    <button type="button" role="tab" class="tab" data-tab="services">Servizi</button>
+    <button type="button" role="tab" class="tab" data-tab="hours">Orari</button>
+  </nav>
+
+  <main class="content">
+    <!-- ============================ CALENDARIO ============================ -->
+    <section class="panel" data-panel="calendar">
+      <div class="toolbar">
+        <div class="btn-group">
+          <button type="button" class="btn" id="cal-prev" aria-label="Precedente">&#8249;</button>
+          <button type="button" class="btn" id="cal-today">Oggi</button>
+          <button type="button" class="btn" id="cal-next" aria-label="Successivo">&#8250;</button>
+        </div>
+        <h2 class="cal-label" id="cal-label"></h2>
+        <div class="btn-group">
+          <button type="button" class="btn view-btn" data-view="day">Giorno</button>
+          <button type="button" class="btn view-btn" data-view="week">Settimana</button>
+        </div>
+        <button type="button" class="btn btn-primary" id="cal-new">+ Prenotazione</button>
+      </div>
+      <div class="calendar-wrap">
+        <div class="calendar" id="calendar"></div>
+      </div>
+      <p class="muted small">Clicca su uno spazio libero per aggiungere una prenotazione, su una prenotazione per modificarla.</p>
+    </section>
+
+    <!-- ============================== BLOCCHI ============================= -->
+    <section class="panel" data-panel="blocks" hidden>
+      <form class="card" id="block-form">
+        <h2>Blocca giorni o fasce orarie</h2>
+        <div class="grid-2">
+          <label class="field"><span>Dal</span><input type="date" name="fromDate" required></label>
+          <label class="field"><span>Al <small>(incluso)</small></span><input type="date" name="toDate"></label>
+        </div>
+        <label class="checkbox"><input type="checkbox" name="allDay" checked> Giornata intera</label>
+        <div class="grid-2" id="block-times" hidden>
+          <label class="field"><span>Dalle</span><input type="time" name="start" step="300"></label>
+          <label class="field"><span>Alle</span><input type="time" name="end" step="300"></label>
+        </div>
+        <label class="field"><span>Motivo <small>(facoltativo)</small></span><input name="reason" maxlength="120" placeholder="Ferie, pausa pranzo, ..."></label>
+        <button type="submit" class="btn btn-primary">Aggiungi blocco</button>
+      </form>
+      <div class="card">
+        <h2>Blocchi in programma</h2>
+        <ul class="list" id="block-list"></ul>
+      </div>
+    </section>
+
+    <!-- ============================== SERVIZI ============================= -->
+    <section class="panel" data-panel="services" hidden>
+      <form class="card" id="service-form">
+        <h2>Nuovo servizio</h2>
+        <div class="grid-3">
+          <label class="field"><span>Nome</span><input name="name" required maxlength="80"></label>
+          <label class="field"><span>Durata (min)</span><input name="durationMinutes" type="number" min="5" step="5" value="30" required></label>
+          <label class="field"><span>Prezzo</span><input name="price" type="number" min="0" step="0.5" value="0" required></label>
+        </div>
+        <label class="field"><span>Descrizione <small>(facoltativa)</small></span><input name="description" maxlength="300"></label>
+        <button type="submit" class="btn btn-primary">Aggiungi servizio</button>
+      </form>
+      <div class="card">
+        <h2>Servizi</h2>
+        <div id="service-list"></div>
+      </div>
+    </section>
+
+    <!-- =============================== ORARI ============================== -->
+    <section class="panel" data-panel="hours" hidden>
+      <form class="card" id="hours-form">
+        <h2>Orari di apertura</h2>
+        <p class="muted small">Puoi inserire più fasce nello stesso giorno (es. mattina e pomeriggio). Nessuna fascia = chiuso.</p>
+        <div id="hours-days"></div>
+        <h2 class="mt">Regole di prenotazione online</h2>
+        <div class="grid-3">
+          <label class="field"><span>Intervallo tra gli orari (min)</span><input name="slotStepMinutes" type="number" min="5" max="120" step="5" required></label>
+          <label class="field"><span>Preavviso minimo (min)</span><input name="minNoticeMinutes" type="number" min="0" step="15" required></label>
+          <label class="field"><span>Prenotabile fino a (giorni)</span><input name="maxDaysAhead" type="number" min="1" max="365" required></label>
+        </div>
+        <button type="submit" class="btn btn-primary">Salva orari</button>
+      </form>
+    </section>
+  </main>
+
+  <!-- ===================== MODALE PRENOTAZIONE ===================== -->
+  <dialog id="booking-dialog" class="dialog">
+    <form id="booking-form" novalidate>
+      <h2 id="booking-dialog-title">Nuova prenotazione</h2>
+      <label class="field"><span>Servizio</span><select name="serviceId" required></select></label>
+      <div class="grid-2">
+        <label class="field"><span>Giorno</span><input type="date" name="date" required></label>
+        <label class="field"><span>Ora</span><input type="time" name="time" step="300" required></label>
+      </div>
+      <label class="field"><span>Nome cliente</span><input name="name" required maxlength="80"></label>
+      <div class="grid-2">
+        <label class="field"><span>Telefono</span><input name="phone" type="tel" required maxlength="20"></label>
+        <label class="field"><span>Email <small>(facoltativa)</small></span><input name="email" type="email" maxlength="120"></label>
+      </div>
+      <label class="field"><span>Note</span><textarea name="notes" rows="2" maxlength="500"></textarea></label>
+      <p class="muted small" id="booking-meta"></p>
+      <p class="error" id="booking-error" hidden></p>
+      <div class="dialog-actions">
+        <button type="button" class="btn btn-danger" id="booking-cancel" hidden>Cancella prenotazione</button>
+        <span class="spacer"></span>
+        <button type="button" class="btn" id="booking-close">Chiudi</button>
+        <button type="submit" class="btn btn-primary" id="booking-save">Salva</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" hidden></div>
+</body>
+</html>

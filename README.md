@@ -261,7 +261,7 @@ Automatici: un timer controlla GitHub ogni 2 minuti e, se c'è un commit nuovo s
 2. *Database Access* → crea un utente con password.
 3. *Network Access* → aggiungi `0.0.0.0/0` (Render non ha IP fissi nel piano gratuito).
 4. *Connect → Drivers* → copia la stringa e aggiungi il nome del database, es.
-   `mongodb+srv://utente:password@cluster0.xxxxx.mongodb.net/booking-mario?retryWrites=true&w=majority`
+   `mongodb+srv://<UTENTE>:<PASSWORD>@<CLUSTER>/booking-mario?retryWrites=true&w=majority`
 
 ### 2. Web service su Render
 

@@ -21,7 +21,8 @@ Stack: Node.js + Express, MongoDB (Mongoose), frontend HTML/CSS/JS vanilla, mobi
 - [Configurazione](#configurazione)
 - [Integrare il widget in un sito esistente](#integrare-il-widget-in-un-sito-esistente)
 - [Pannello admin](#pannello-admin)
-- [Deploy su Render](#deploy-su-render)
+- [Deploy sulla VM Oracle](#deploy-sulla-vm-oracle)
+- [Deploy su Render (alternativa)](#deploy-su-render-alternativa)
 - [Struttura del progetto](#struttura-del-progetto)
 - [API](#api)
 - [Come funziona l'anti doppia prenotazione](#come-funziona-lanti-doppia-prenotazione)
@@ -204,7 +205,56 @@ Password dimenticata? `npm run create-admin -- admin NuovaPassword123` (in local
 
 ---
 
-## Deploy su Render
+## Deploy sulla VM Oracle
+
+Il server gira sulla VM insieme agli altri servizi: MongoDB in un container
+Docker (raggiungibile solo dalla VM), l'app come servizio systemd e Caddy
+davanti con HTTPS automatico. Uno script fa tutto.
+
+### 1. DNS e porte (una volta)
+- Crea un record **A** `booking.dxveblud.dev` → IP pubblico della VM.
+- Nella **Security List** di Oracle devono essere aperte le porte **80** e **443** (TCP, da `0.0.0.0/0`).
+
+### 2. Clona la repo sulla VM
+La repo è privata, quindi la VM deve potersi autenticare su GitHub. Se `git clone` chiede la password, crea una **deploy key** (sola lettura):
+
+```bash
+ssh-keygen -t ed25519 -f ~/.ssh/booking_deploy -N "" -C "vm-booking"
+cat ~/.ssh/booking_deploy.pub
+# GitHub → repo booking → Settings → Deploy keys → Add deploy key → incolla
+cat >> ~/.ssh/config <<'CFG'
+Host github-booking
+  HostName github.com
+  User git
+  IdentityFile ~/.ssh/booking_deploy
+CFG
+git clone git@github-booking:Dxveblud/booking.git ~/booking
+```
+
+### 3. Installa
+```bash
+bash ~/booking/deploy/setup-vm.sh booking.dxveblud.dev
+```
+
+A fine script vengono stampati l'indirizzo e la **password admin** (generata a caso e salvata in `~/booking/.env`).
+Lo script si può rilanciare senza problemi: salta i passi già fatti e non sovrascrive `.env`.
+
+### Aggiornamenti
+Automatici: un timer controlla GitHub ogni 2 minuti e, se c'è un commit nuovo su `main`, scarica il codice e riavvia (`deploy/autoupdate.sh`). A mano: `bash ~/booking/deploy/deploy.sh`.
+
+| Cosa | Comando |
+|---|---|
+| Log dell'app | `journalctl -u booking -f` |
+| Riavvio | `sudo systemctl restart booking` |
+| Stato aggiornamenti | `systemctl list-timers booking-autoupdate.timer` |
+| Backup del database | `sudo docker exec booking-mongo mongodump --archive --db booking > backup-$(date +%F).archive` |
+| Ripristino | `sudo docker exec -i booking-mongo mongorestore --archive < backup.archive` |
+
+> Caddy: il sito è in `/etc/caddy/sites/booking.caddy`, importato dal `Caddyfile` principale. Se un altro script riscrive il `Caddyfile` da zero, rilancia `setup-vm.sh` per rimettere la riga `import`.
+
+---
+
+## Deploy su Render (alternativa)
 
 ### 1. Database: MongoDB Atlas (gratuito)
 1. Crea un account su [MongoDB Atlas](https://www.mongodb.com/atlas) e un cluster **M0 (free)**.
@@ -244,7 +294,8 @@ Per ogni attività: duplica la repo (o crea un branch), modifica `config.json` e
 booking-template/
 ├── config.json                 # dati dell'attività (nome, logo, default…)
 ├── .env.example                # variabili d'ambiente di esempio
-├── render.yaml                 # blueprint per il deploy su Render
+├── deploy/                     # script per la VM (setup, deploy, aggiornamento automatico)
+├── render.yaml                 # blueprint per il deploy su Render (alternativa)
 ├── scripts/
 │   ├── create-admin.js         # crea/reimposta un amministratore
 │   └── seed.js                 # dati iniziali

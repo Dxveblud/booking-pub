@@ -90,7 +90,11 @@
     if (e.data.type === 'close') close();
   });
 
-  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
+  // Esc chiude il widget; preventDefault segnala al sito ospite che il tasto
+  // e' gia' stato gestito (cosi' non chiude anche un suo eventuale popup)
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && overlay) { e.preventDefault(); close(); }
+  });
 
   // Delegation: qualunque [data-booking-open] apre il widget
   document.addEventListener('click', function (e) {

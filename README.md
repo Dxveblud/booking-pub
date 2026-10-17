@@ -216,19 +216,10 @@ davanti con HTTPS automatico. Uno script fa tutto.
 - Nella **Security List** di Oracle devono essere aperte le porte **80** e **443** (TCP, da `0.0.0.0/0`).
 
 ### 2. Clona la repo sulla VM
-La repo è privata, quindi la VM deve potersi autenticare su GitHub. Se `git clone` chiede la password, crea una **deploy key** (sola lettura):
+La copia pubblica [`Dxveblud/booking-pub`](https://github.com/Dxveblud/booking-pub) si scarica senza credenziali:
 
 ```bash
-ssh-keygen -t ed25519 -f ~/.ssh/booking_deploy -N "" -C "vm-booking"
-cat ~/.ssh/booking_deploy.pub
-# GitHub → repo booking → Settings → Deploy keys → Add deploy key → incolla
-cat >> ~/.ssh/config <<'CFG'
-Host github-booking
-  HostName github.com
-  User git
-  IdentityFile ~/.ssh/booking_deploy
-CFG
-git clone git@github-booking:Dxveblud/booking.git ~/booking
+git clone https://github.com/Dxveblud/booking-pub ~/booking
 ```
 
 ### 3. Installa

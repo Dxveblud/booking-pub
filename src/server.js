@@ -7,14 +7,21 @@ const { connectDb } = require('./db');
 const { createApp } = require('./app');
 const { bootstrap } = require('./services/bootstrap');
 const { registerIntegrations } = require('./services/integrations');
+const { startDemoMode } = require('./services/demoService');
 
 async function main() {
   await connectDb();
   await bootstrap();
   registerIntegrations();
+  startDemoMode(); // attiva solo se config.json → demo.enabled
 
   const app = createApp();
-  const server = app.listen(config.env.port, () => {
+  const server = app.listen(config.env.port, (err) => {
+    // Express 5 passa qui l'eventuale errore (es. porta già occupata)
+    if (err) {
+      console.error(`[server] Impossibile usare la porta ${config.env.port}: ${err.message}`);
+      process.exit(1);
+    }
     console.log(`[server] "${config.business.name}" in ascolto su http://localhost:${config.env.port}`);
   });
 

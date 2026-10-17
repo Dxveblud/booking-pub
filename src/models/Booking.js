@@ -30,6 +30,8 @@ const bookingSchema = new mongoose.Schema(
     notes: { type: String, trim: true, maxlength: 500, default: '' },
 
     source: { type: String, enum: BOOKING_SOURCE, default: 'online' },
+    // Prenotazione finta generata dalla modalità demo (vedi services/demoService.js)
+    isDemo: { type: Boolean, default: false },
     status: { type: String, enum: BOOKING_STATUS, default: 'confirmed' },
     cancelledAt: { type: Date },
 

@@ -41,7 +41,7 @@ async function loadActiveService(serviceId) {
 router.get('/business', async (req, res) => {
   const settings = await getSettings();
   const { id, ...business } = config.business; // l'id interno non serve al client
-  res.json({ ...business, maxDaysAhead: settings.maxDaysAhead });
+  res.json({ ...business, site: config.site, maxDaysAhead: settings.maxDaysAhead });
 });
 
 router.get('/services', async (req, res) => {

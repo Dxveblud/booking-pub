@@ -11,8 +11,9 @@
  *   data-color="#1f6f5c"                       colore del pulsante
  *   data-position="right" | "left"             lato del pulsante flottante
  *
- * Qualunque elemento con attributo [data-booking-open] apre il widget.
- * API JavaScript: window.BookingWidget.open() / .close()
+ * Qualunque elemento con attributo [data-booking-open] apre il widget;
+ * con data-booking-service="<id>" parte gia' dal servizio indicato.
+ * API JavaScript: window.BookingWidget.open({ serviceId }) / .close()
  *
  * Il flusso di prenotazione gira dentro un iframe servito da questo stesso
  * server: gli stili del sito ospite non lo influenzano e viceversa.
@@ -28,7 +29,7 @@
     mode: script.getAttribute('data-mode') || 'floating',
     target: script.getAttribute('data-target'),
     label: script.getAttribute('data-label') || 'Prenota',
-    color: script.getAttribute('data-color') || '#1f6f5c',
+    color: script.getAttribute('data-color') || '#1c1917',
     position: script.getAttribute('data-position') === 'left' ? 'left' : 'right',
   };
 
@@ -44,9 +45,9 @@
       '.' + PREFIX + 'btn:hover{transform:translateY(-1px)}' +
       '.' + PREFIX + 'btn:focus-visible{outline:3px solid #000;outline-offset:2px}' +
       '.' + PREFIX + 'floating{position:fixed;bottom:20px;' + opts.position + ':20px;z-index:2147483000}' +
-      '.' + PREFIX + 'overlay{position:fixed;inset:0;z-index:2147483646;background:rgba(15,20,25,.55);display:flex;align-items:center;justify-content:center;animation:' + PREFIX + 'fade .15s}' +
+      '.' + PREFIX + 'overlay{position:fixed;inset:0;z-index:2147483646;background:rgba(18,15,13,.6);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;animation:' + PREFIX + 'fade .15s}' +
       '.' + PREFIX + 'frame{width:100%;height:100%;border:0;background:#fff}' +
-      '@media (min-width:600px){.' + PREFIX + 'frame{width:460px;height:min(760px,92vh);border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.3)}}' +
+      '@media (min-width:600px){.' + PREFIX + 'frame{width:480px;height:min(780px,92vh);border-radius:20px;box-shadow:0 30px 80px rgba(0,0,0,.35)}}' +
       '@keyframes ' + PREFIX + 'fade{from{opacity:0}to{opacity:1}}';
     var style = document.createElement('style');
     style.setAttribute('data-booking-widget', '');
@@ -54,8 +55,9 @@
     document.head.appendChild(style);
   }
 
-  function open() {
+  function open(options) {
     if (overlay) return;
+    var serviceId = options && options.serviceId;
     lastFocus = document.activeElement;
     overlay = document.createElement('div');
     overlay.className = PREFIX + 'overlay';
@@ -66,7 +68,7 @@
     var iframe = document.createElement('iframe');
     iframe.className = PREFIX + 'frame';
     iframe.title = 'Prenotazione';
-    iframe.src = origin + '/widget/booking.html?embed=1';
+    iframe.src = origin + '/widget/booking.html?embed=1' + (serviceId ? '&service=' + encodeURIComponent(serviceId) : '');
     overlay.appendChild(iframe);
 
     // Click fuori dal riquadro → chiude
@@ -99,7 +101,7 @@
   // Delegation: qualunque [data-booking-open] apre il widget
   document.addEventListener('click', function (e) {
     var el = e.target.closest && e.target.closest('[data-booking-open]');
-    if (el) { e.preventDefault(); open(); }
+    if (el) { e.preventDefault(); open({ serviceId: el.getAttribute('data-booking-service') }); }
   });
 
   function createButton() {
@@ -107,7 +109,7 @@
     btn.type = 'button';
     btn.className = PREFIX + 'btn';
     btn.textContent = opts.label;
-    btn.addEventListener('click', open);
+    btn.addEventListener('click', function () { open(); });
     return btn;
   }
 

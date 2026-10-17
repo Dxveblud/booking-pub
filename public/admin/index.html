@@ -6,14 +6,19 @@
   <link rel="icon" href="/img/logo.svg" type="image/svg+xml">
   <meta name="robots" content="noindex">
   <title>Gestione prenotazioni</title>
+  <link rel="stylesheet" href="/css/fonts.css">
   <link rel="stylesheet" href="/admin/admin.css">
   <script src="/admin/admin.js" defer></script>
 </head>
 <body>
   <header class="topbar">
-    <strong id="business-name">Gestione</strong>
+    <div class="topbar-brand">
+      <img id="business-logo" src="/img/logo.svg" alt="" width="32" height="32">
+      <strong id="business-name">Gestione</strong>
+    </div>
     <div class="topbar-right">
       <span class="muted" id="admin-user"></span>
+      <a class="btn btn-ghost" href="/" target="_blank" rel="noopener">Vedi sito</a>
       <button type="button" class="btn btn-ghost" id="logout">Esci</button>
     </div>
   </header>
@@ -41,10 +46,11 @@
         </div>
         <button type="button" class="btn btn-primary" id="cal-new">+ Prenotazione</button>
       </div>
+      <div class="stats" id="cal-stats"></div>
       <div class="calendar-wrap">
         <div class="calendar" id="calendar"></div>
       </div>
-      <p class="muted small">Clicca su uno spazio libero per aggiungere una prenotazione, su una prenotazione per modificarla.</p>
+      <div class="legend"><span><i style="background:#f3ede4;border-left:3px solid #b08a4e"></i>Prenotata online</span><span><i style="background:#e9e4dc;border-left:3px solid #1c1917"></i>Inserita a mano</span><span>Clicca su uno spazio libero per aggiungere, su un appuntamento per modificarlo.</span></div>
     </section>
 
     <!-- ============================== BLOCCHI ============================= -->

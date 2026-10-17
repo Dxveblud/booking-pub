@@ -5,78 +5,101 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="icon" href="/img/logo.svg" type="image/svg+xml">
   <title>Prenota</title>
+  <link rel="stylesheet" href="/css/fonts.css">
   <link rel="stylesheet" href="/widget/booking.css">
   <script src="/widget/booking.js" defer></script>
 </head>
 <body>
   <div class="bk">
     <header class="bk-header">
-      <button type="button" class="bk-icon-btn" id="bk-back" aria-label="Indietro" hidden>&#8592;</button>
+      <button type="button" class="bk-icon-btn" id="bk-back" aria-label="Indietro" hidden>
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <img class="bk-logo" id="bk-logo" src="/img/logo.svg" alt="" width="36" height="36">
       <div class="bk-title">
         <strong id="bk-business">Prenota</strong>
         <span id="bk-step-label">Scegli il servizio</span>
       </div>
-      <button type="button" class="bk-icon-btn" id="bk-close" aria-label="Chiudi" hidden>&#10005;</button>
+      <button type="button" class="bk-icon-btn" id="bk-close" aria-label="Chiudi" hidden>
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
     </header>
 
-    <div class="bk-progress" aria-hidden="true"><span id="bk-progress-bar"></span></div>
+    <ol class="bk-steps" id="bk-steps" aria-hidden="true">
+      <li data-for="service">Servizio</li>
+      <li data-for="day">Giorno</li>
+      <li data-for="time">Orario</li>
+      <li data-for="details">Dati</li>
+    </ol>
 
     <main class="bk-body" id="bk-body" aria-live="polite">
-      <!-- Step 1: servizio -->
+      <!-- 1. Servizio -->
       <section class="bk-step" data-step="service">
-        <ul class="bk-list" id="bk-services"></ul>
+        <ul class="bk-services" id="bk-services"></ul>
       </section>
 
-      <!-- Step 2: giorno -->
+      <!-- 2. Giorno -->
       <section class="bk-step" data-step="day" hidden>
-        <div class="bk-days" id="bk-days" role="listbox" aria-label="Giorni disponibili"></div>
-        <p class="bk-muted" id="bk-days-empty" hidden>Nessun giorno disponibile al momento.</p>
+        <div class="bk-chosen" id="bk-chosen-day"></div>
+        <div class="bk-days" id="bk-days"></div>
+        <p class="bk-empty" id="bk-days-empty" hidden>Nessun giorno disponibile al momento. Riprova più tardi o chiamaci.</p>
       </section>
 
-      <!-- Step 3: orario -->
+      <!-- 3. Orario -->
       <section class="bk-step" data-step="time" hidden>
-        <p class="bk-subtitle" id="bk-time-date"></p>
-        <div class="bk-slots" id="bk-slots"></div>
-        <p class="bk-muted" id="bk-slots-empty" hidden>Nessun orario libero in questo giorno.</p>
+        <div class="bk-chosen" id="bk-chosen-time"></div>
+        <div id="bk-slots"></div>
+        <p class="bk-empty" id="bk-slots-empty" hidden>Questo giorno è al completo. Torna indietro e scegline un altro.</p>
       </section>
 
-      <!-- Step 4: dati cliente -->
+      <!-- 4. Dati -->
       <section class="bk-step" data-step="details" hidden>
+        <div class="bk-chosen" id="bk-chosen-details"></div>
         <form id="bk-form" novalidate>
           <label class="bk-field">
             <span>Nome e cognome</span>
-            <input name="name" autocomplete="name" required minlength="2" maxlength="80">
+            <input name="name" autocomplete="name" required minlength="2" maxlength="80" placeholder="Mario Rossi">
           </label>
           <label class="bk-field">
-            <span>Telefono</span>
-            <input name="phone" type="tel" autocomplete="tel" inputmode="tel" required maxlength="20" placeholder="+39 ...">
+            <span>Cellulare</span>
+            <input name="phone" type="tel" autocomplete="tel" inputmode="tel" required maxlength="20" placeholder="+39 333 123 4567">
           </label>
           <label class="bk-field">
-            <span>Note <small>(facoltative)</small></span>
-            <textarea name="notes" rows="2" maxlength="500"></textarea>
+            <span>Note <small>facoltative</small></span>
+            <textarea name="notes" rows="2" maxlength="500" placeholder="Es. prima volta, richieste particolari…"></textarea>
           </label>
           <p class="bk-error" id="bk-form-error" hidden></p>
-          <button type="submit" class="bk-primary">Continua</button>
+          <p class="bk-privacy">Usiamo nome e numero solo per gestire il tuo appuntamento.</p>
         </form>
       </section>
 
-      <!-- Step 5: riepilogo -->
+      <!-- 5. Riepilogo -->
       <section class="bk-step" data-step="confirm" hidden>
-        <dl class="bk-summary" id="bk-summary"></dl>
+        <div class="bk-summary" id="bk-summary"></div>
         <p class="bk-error" id="bk-confirm-error" hidden></p>
-        <button type="button" class="bk-primary" id="bk-confirm">Conferma prenotazione</button>
       </section>
 
-      <!-- Step 6: fatto -->
+      <!-- 6. Confermato -->
       <section class="bk-step bk-done" data-step="done" hidden>
-        <div class="bk-check" aria-hidden="true">&#10003;</div>
-        <h2>Prenotazione confermata!</h2>
+        <div class="bk-check" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="34" height="34"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <h2>Ci vediamo presto!</h2>
         <p id="bk-done-text"></p>
-        <button type="button" class="bk-secondary" id="bk-restart">Nuova prenotazione</button>
+        <div class="bk-ticket" id="bk-ticket"></div>
+        <button type="button" class="bk-secondary" id="bk-ics">
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3.5 10h17M8 3v4M16 3v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          Aggiungi al calendario
+        </button>
+        <button type="button" class="bk-link" id="bk-restart">Prenota un altro appuntamento</button>
       </section>
 
       <div class="bk-loading" id="bk-loading" hidden><span class="bk-spinner"></span></div>
     </main>
+
+    <footer class="bk-footer" id="bk-footer" hidden>
+      <button type="button" class="bk-primary" id="bk-next">Continua</button>
+    </footer>
   </div>
 </body>
 </html>

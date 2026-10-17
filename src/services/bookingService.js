@@ -99,9 +99,10 @@ function serializePublicBooking(b) {
 /**
  * Crea una prenotazione.
  * @param {object} input  { serviceId, date, time, customer:{name,phone,email}, notes }
- * @param {object} opts   { source: 'online' | 'admin' }
+ * @param {object} opts   { source: 'online' | 'admin', isDemo, silent }
+ *                        silent: non emette eventi (niente notifiche/sync)
  */
-async function createBooking(input, { source = 'online' } = {}) {
+async function createBooking(input, { source = 'online', isDemo = false, silent = false } = {}) {
   const isOnline = source === 'online';
   const service = await findService(input.serviceId, { onlyActive: isOnline });
   const { date, start } = parseDateTime(input);
@@ -131,13 +132,14 @@ async function createBooking(input, { source = 'online' } = {}) {
       customer,
       notes: String(input.notes || '').trim().slice(0, 500),
       source,
+      isDemo,
     });
   } catch (err) {
     await slotLocks.release(bookingId);
     throw err;
   }
 
-  emitBookingEvent(BOOKING_EVENTS.CREATED, booking);
+  if (!silent) emitBookingEvent(BOOKING_EVENTS.CREATED, booking);
   return booking;
 }
 

@@ -14,6 +14,7 @@
   var HOUR_HEIGHT = 64; // deve coincidere con --hour-height in admin.css
   var PX_PER_MIN = HOUR_HEIGHT / 60;
   var LOCALE = 'it-IT';
+  var CURRENCY = 'EUR';
 
   function $(id) { return document.getElementById(id); }
 
@@ -153,6 +154,7 @@
       ? formatDate(state.anchor, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
       : formatDate(days[0], { day: 'numeric', month: 'short' }) + ' – ' + formatDate(days[6], { day: 'numeric', month: 'short', year: 'numeric' });
 
+    renderStats(days);
     cal.innerHTML = '';
     cal.style.setProperty('--days', days.length);
     cal.style.setProperty('--col-min', state.view === 'day' ? '220px' : '110px');
@@ -222,6 +224,30 @@
 
       cal.appendChild(col);
     });
+  }
+
+  /** Riepilogo sopra il calendario: appuntamenti e incasso previsto. */
+  function renderStats(days) {
+    var t = today();
+    var fmt = new Intl.NumberFormat(LOCALE, { style: 'currency', currency: CURRENCY, maximumFractionDigits: 0 });
+    var sum = function (list) { return list.reduce(function (acc, b) { return acc + (b.price || 0); }, 0); };
+    var period = state.bookings;
+    var online = period.filter(function (b) { return b.source === 'online'; }).length;
+    var stats = [];
+    if (days.indexOf(t) >= 0) {
+      var oggi = period.filter(function (b) { return b.date === t; });
+      var now = new Date();
+      var nowMin = now.getHours() * 60 + now.getMinutes();
+      var next = oggi.filter(function (b) { return toMin(b.start) >= nowMin; })[0];
+      stats.push(['Oggi', oggi.length + ' appunt.']);
+      stats.push(['Prossimo', next ? next.start + ' · ' + next.customer.name.split(' ')[0] : '—']);
+    }
+    stats.push([state.view === 'day' ? 'Giorno' : 'Settimana', period.length + ' appunt. · ' + fmt.format(sum(period))]);
+    stats.push(['Prenotati online', period.length ? Math.round((online / period.length) * 100) + '%' : '—']);
+
+    var box = $('cal-stats');
+    box.innerHTML = '';
+    stats.forEach(function (s) { box.appendChild(el('div', { class: 'stat' }, [el('small', { text: s[0] }), el('b', { text: s[1] })])); });
   }
 
   function shiftCalendar(direction) {
@@ -536,7 +562,10 @@
       $('business-name').textContent = b.name;
       document.title = 'Gestione · ' + b.name;
       if (b.locale) LOCALE = b.locale;
+      if (b.currency) CURRENCY = b.currency;
+      if (b.logo) $('business-logo').src = b.logo;
       if (b.primaryColor) document.documentElement.style.setProperty('--primary', b.primaryColor);
+      if (b.accentColor) document.documentElement.style.setProperty('--accent', b.accentColor);
     }).catch(function () {});
 
     showTab('calendar');

@@ -6,59 +6,128 @@
   <link rel="icon" href="/img/logo.svg" type="image/svg+xml">
   <title>Prenota online</title>
   <meta name="description" content="Prenota online il tuo appuntamento.">
+  <meta name="theme-color" content="#1c1917">
+  <link rel="preload" href="/fonts/playfair-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/css/fonts.css">
   <link rel="stylesheet" href="/css/site.css">
   <script src="/js/site.js" defer></script>
-  <!-- Il widget di prenotazione: lo stesso che si incorpora nei siti dei clienti -->
+  <!-- Widget di prenotazione: lo stesso che si incorpora nei siti dei clienti -->
   <script src="/widget/widget.js" data-mode="none" defer></script>
 </head>
 <body>
-  <header class="site-header">
-    <div class="container header-inner">
-      <a class="brand" href="/">
-        <img id="biz-logo" src="/img/logo.svg" alt="" width="40" height="40">
+  <div class="demo-bar" id="demo-bar" hidden></div>
+
+  <header class="nav" id="nav">
+    <div class="container nav-inner">
+      <a class="brand" href="#top">
+        <img id="biz-logo" src="/img/logo.svg" alt="" width="36" height="36">
         <span id="biz-name-header">La tua attività</span>
       </a>
-      <button type="button" class="btn btn-small" data-booking-open>Prenota</button>
+      <nav class="nav-links" aria-label="Sezioni">
+        <a href="#servizi">Servizi</a>
+        <a href="#chi-siamo">Chi siamo</a>
+        <a href="#galleria">Galleria</a>
+        <a href="#orari">Orari e contatti</a>
+      </nav>
+      <button type="button" class="btn btn-accent btn-sm" data-booking-open>Prenota</button>
     </div>
   </header>
 
-  <main>
-    <section class="hero">
-      <div class="container">
+  <main id="top">
+    <!-- HERO -->
+    <section class="hero" id="hero">
+      <div class="hero-shade"></div>
+      <div class="container hero-content">
+        <p class="eyebrow" id="hero-eyebrow">Su appuntamento</p>
         <h1 id="biz-name">La tua attività</h1>
-        <p class="tagline" id="biz-tagline"></p>
-        <button type="button" class="btn btn-large" data-booking-open>Prenota ora</button>
+        <p class="hero-tagline" id="biz-tagline"></p>
+        <div class="hero-actions">
+          <button type="button" class="btn btn-accent btn-lg" data-booking-open>Prenota online</button>
+          <a class="btn btn-ghost btn-lg" id="hero-call" href="#orari">Chiama</a>
+        </div>
+        <p class="open-status" id="open-status" hidden></p>
       </div>
     </section>
 
-    <section class="container section">
-      <h2>Chi siamo</h2>
-      <p id="biz-description" class="lead"></p>
-    </section>
-
-    <section class="container section">
-      <h2>Servizi</h2>
-      <ul class="services" id="services"></ul>
-    </section>
-
-    <section class="container section info-grid">
-      <div>
-        <h2>Orari</h2>
-        <dl class="hours" id="hours"></dl>
+    <!-- SERVIZI -->
+    <section class="section section-light" id="servizi">
+      <div class="container">
+        <div class="section-head">
+          <p class="eyebrow eyebrow-dark">Listino</p>
+          <h2>Servizi e prezzi</h2>
+          <p class="muted">Scegli il servizio e prenota l'orario che preferisci: vedi solo quelli davvero liberi.</p>
+        </div>
+        <ul class="menu" id="services"></ul>
       </div>
-      <div>
-        <h2>Contatti</h2>
-        <p id="biz-address"></p>
-        <p><a id="biz-phone" href="#"></a></p>
-        <p><a id="biz-email" href="#"></a></p>
+    </section>
+
+    <!-- CHI SIAMO -->
+    <section class="section" id="chi-siamo">
+      <div class="container about">
+        <figure class="about-photo"><img id="about-img" src="" alt="" loading="lazy" hidden></figure>
+        <div class="about-text">
+          <p class="eyebrow eyebrow-dark">Chi siamo</p>
+          <h2 id="about-title">La nostra bottega</h2>
+          <p class="lead" id="biz-description"></p>
+          <ul class="highlights" id="highlights"></ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- GALLERIA -->
+    <section class="section section-dark" id="galleria">
+      <div class="container">
+        <div class="section-head">
+          <p class="eyebrow">Galleria</p>
+          <h2>Dal nostro salone</h2>
+        </div>
+        <div class="gallery" id="gallery"></div>
+      </div>
+    </section>
+
+    <!-- ORARI E CONTATTI -->
+    <section class="section section-light" id="orari">
+      <div class="container info">
+        <div class="card">
+          <h2>Orari</h2>
+          <dl class="hours" id="hours"></dl>
+        </div>
+        <div class="card">
+          <h2>Dove siamo</h2>
+          <p class="contact-line" id="biz-address"></p>
+          <p class="contact-line"><a id="biz-phone" href="#"></a></p>
+          <p class="contact-line"><a id="biz-email" href="#"></a></p>
+          <div class="card-actions">
+            <a class="btn btn-dark" id="maps-link" href="#" target="_blank" rel="noopener">Indicazioni</a>
+            <button type="button" class="btn btn-accent" data-booking-open>Prenota</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="cta">
+      <div class="container cta-inner">
+        <h2>Il tuo posto è libero.</h2>
+        <p>Prenota in meno di un minuto, ti ricordiamo noi l'orario.</p>
+        <button type="button" class="btn btn-accent btn-lg" data-booking-open>Prenota ora</button>
       </div>
     </section>
   </main>
 
-  <footer class="site-footer">
-    <div class="container">
-      <span id="biz-footer"></span>
+  <footer class="footer">
+    <div class="container footer-inner">
+      <div class="brand brand-footer">
+        <img src="/img/logo.svg" alt="" width="32" height="32">
+        <span id="biz-footer-name"></span>
+      </div>
+      <p id="biz-footer"></p>
+      <p class="footer-small" id="demo-footer" hidden></p>
     </div>
   </footer>
+
+  <!-- Barra fissa su mobile -->
+  <div class="mobile-cta">
+    <button type="button" class="btn btn-accent btn-block" data-booking-open>Prenota online</button>
+  </div>
 </body>
 </html>

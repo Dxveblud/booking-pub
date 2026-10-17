@@ -34,6 +34,8 @@ function nextTuesday(offsetWeeks = 0) {
 
 test.before(async () => {
   mongo = await MongoMemoryServer.create();
+  // Configurazione fissa per i test (indipendente dal config.json della demo)
+  process.env.CONFIG_PATH = require('path').join(__dirname, 'fixtures', 'config.json');
   process.env.MONGODB_URI = mongo.getUri('booking-test');
   process.env.NODE_ENV = 'test';
   process.env.ADMIN_USERNAME = ADMIN.username;

@@ -1,37 +1,68 @@
 {
   "business": {
     "id": "demo",
-    "name": "Barberia Demo",
-    "tagline": "Taglio, barba e cura dal 1990",
-    "description": "Questa è una descrizione segnaposto. Racconta qui la tua attività: chi sei, cosa offri e perché i clienti dovrebbero sceglierti. Modifica il testo nel file config.json.",
+    "name": "Barberia Novecento",
+    "tagline": "Taglio classico, barba a regola d'arte.",
+    "description": "Dal 1990 tagliamo capelli e curiamo barbe con gli strumenti e i gesti della tradizione: forbici, rasoio a mano libera e panni caldi. Lavoriamo solo su appuntamento, così ogni cliente ha il suo tempo e nessuno aspetta.",
     "logo": "/img/logo.svg",
-    "address": "Via Roma 1, 00100 Città",
-    "phone": "+39 000 000 0000",
-    "email": "info@example.com",
-    "primaryColor": "#1f6f5c",
+    "address": "Via del Rasoio 9, 61121 Pesaro (PU)",
+    "mapsQuery": "Pesaro",
+    "phone": "+39 0721 000 000",
+    "email": "demo@dxveblud.dev",
+    "instagram": "",
+    "primaryColor": "#1c1917",
+    "accentColor": "#b08a4e",
     "timezone": "Europe/Rome",
     "currency": "EUR",
     "locale": "it-IT"
   },
+  "site": {
+    "heroImage": "/img/demo/hero.jpg",
+    "aboutImage": "/img/demo/about.jpg",
+    "aboutTitle": "Una bottega, non una catena",
+    "highlights": [
+      { "title": "Solo su appuntamento", "text": "Prenoti online in 30 secondi, arrivi e ti sediamo subito." },
+      { "title": "Rasatura tradizionale", "text": "Panno caldo, sapone montato a pennello e rasoio a mano libera." },
+      { "title": "Prodotti professionali", "text": "Oli, balsami e cere selezionati, anche da portare a casa." }
+    ],
+    "gallery": [
+      "/img/demo/g1.jpg",
+      "/img/demo/g2.jpg",
+      "/img/demo/g3.jpg",
+      "/img/demo/g4.jpg",
+      "/img/demo/g5.jpg",
+      "/img/demo/g6.jpg"
+    ],
+    "demoNotice": "Sito dimostrativo: l'attività, l'indirizzo e i contatti sono fittizi. Le prenotazioni funzionano davvero ma servono solo come esempio."
+  },
   "booking": {
     "slotStepMinutes": 15,
     "minNoticeMinutes": 60,
-    "maxDaysAhead": 60
+    "maxDaysAhead": 45
+  },
+  "demo": {
+    "enabled": true,
+    "seedVersion": 2,
+    "fillRatio": 0.45,
+    "daysToFill": 14
   },
   "defaults": {
     "openingHours": {
       "0": [],
       "1": [],
-      "2": [{ "start": "09:00", "end": "13:00" }, { "start": "15:00", "end": "19:30" }],
-      "3": [{ "start": "09:00", "end": "13:00" }, { "start": "15:00", "end": "19:30" }],
-      "4": [{ "start": "09:00", "end": "13:00" }, { "start": "15:00", "end": "19:30" }],
-      "5": [{ "start": "09:00", "end": "13:00" }, { "start": "15:00", "end": "19:30" }],
-      "6": [{ "start": "09:00", "end": "18:00" }]
+      "2": [{ "start": "09:00", "end": "12:30" }, { "start": "14:30", "end": "19:30" }],
+      "3": [{ "start": "09:00", "end": "12:30" }, { "start": "14:30", "end": "19:30" }],
+      "4": [{ "start": "09:00", "end": "12:30" }, { "start": "14:30", "end": "20:00" }],
+      "5": [{ "start": "09:00", "end": "12:30" }, { "start": "14:30", "end": "20:00" }],
+      "6": [{ "start": "08:30", "end": "18:00" }]
     },
     "services": [
-      { "name": "Taglio uomo", "durationMinutes": 30, "price": 18, "description": "Taglio con forbici e macchinetta" },
-      { "name": "Barba", "durationMinutes": 20, "price": 10, "description": "Rifinitura e panno caldo" },
-      { "name": "Taglio + barba", "durationMinutes": 45, "price": 25, "description": "Il pacchetto completo" }
+      { "name": "Taglio", "durationMinutes": 30, "price": 20, "description": "Shampoo, taglio a forbice o macchinetta e styling" },
+      { "name": "Taglio + barba", "durationMinutes": 45, "price": 30, "description": "Il servizio completo, con rifinitura del collo" },
+      { "name": "Regolazione barba", "durationMinutes": 20, "price": 12, "description": "Forma, contorni e olio da barba" },
+      { "name": "Rasatura tradizionale", "durationMinutes": 30, "price": 22, "description": "Panni caldi, pennello e rasoio a mano libera" },
+      { "name": "Skin fade", "durationMinutes": 45, "price": 25, "description": "Sfumatura a zero con transizione morbida" },
+      { "name": "Taglio bambino", "durationMinutes": 20, "price": 14, "description": "Fino a 12 anni" }
     ]
   }
 }

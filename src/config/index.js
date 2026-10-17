@@ -54,8 +54,30 @@ const business = {
   timezone: 'Europe/Rome',
   currency: 'EUR',
   locale: 'it-IT',
-  primaryColor: '#1f6f5c',
+  primaryColor: '#1c1917',
+  accentColor: '#b08a4e',
   ...fileConfig.business,
+};
+
+// Contenuti del sito template (foto, sezioni). Tutti facoltativi.
+const site = {
+  heroImage: '',
+  aboutImage: '',
+  aboutTitle: '',
+  highlights: [],
+  gallery: [],
+  demoNotice: '',
+  ...fileConfig.site,
+};
+
+// Modalità demo (portfolio): servizi e prenotazioni di esempio generati da soli.
+// Da lasciare disattivata per le attività reali.
+const demo = {
+  enabled: false,
+  seedVersion: 1,
+  fillRatio: 0.45,
+  daysToFill: 14,
+  ...fileConfig.demo,
 };
 
 const booking = {
@@ -71,4 +93,4 @@ const defaults = {
   ...fileConfig.defaults,
 };
 
-module.exports = { env, business, booking, defaults, ROOT };
+module.exports = { env, business, site, booking, defaults, demo, ROOT };

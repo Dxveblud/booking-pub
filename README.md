@@ -122,6 +122,15 @@ Per ogni nuovo cliente modifica solo questo file (e il logo in `public/img/`):
 
 > Orari, servizi e regole, una volta creati, si gestiscono dal pannello admin. I `defaults` servono solo come punto di partenza.
 
+### Sezione `site` (sito template)
+Foto e contenuti della pagina pubblica: `heroImage`, `aboutImage`, `aboutTitle`, `highlights` (3 punti di forza), `gallery` (elenco di immagini) e `demoNotice` (se presente mostra la fascia "Sito dimostrativo"). Le immagini vanno in `public/img/` oppure possono essere URL https.
+
+### Modalità demo (`demo.enabled`)
+Pensata per la vetrina/portfolio, **da lasciare disattivata per un cliente reale**:
+- quando cambia `demo.seedVersion` ricarica servizi e orari da `config.json`;
+- ogni 6 ore riempie circa `fillRatio` degli orari nei prossimi `daysToFill` giorni con prenotazioni finte (`isDemo: true`), così il widget mostra una disponibilità realistica e il calendario admin non è vuoto;
+- le prenotazioni finte non inviano notifiche e non toccano quelle vere.
+
 ### `.env`: segreti e parametri di deploy
 
 Vedi [`.env.example`](.env.example). Le principali:
@@ -409,3 +418,10 @@ npm test
 ```
 
 I test usano `node:test` e `mongodb-memory-server` (scarica automaticamente un MongoDB temporaneo, non serve configurare nulla). Coprono il calcolo degli orari, le richieste simultanee, le sovrapposizioni tra servizi di durata diversa, l'autenticazione admin, la protezione CSRF, la modifica e cancellazione delle prenotazioni, i blocchi e gli orari.
+
+---
+
+## Crediti
+
+- Foto della demo: [Unsplash](https://unsplash.com) (licenza Unsplash, uso libero anche commerciale).
+- Font: Playfair Display e Inter (Google Fonts, licenza SIL Open Font License), inclusi in `public/fonts/`.

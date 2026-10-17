@@ -102,8 +102,16 @@ function createApp() {
   // La pagina admin si raggiunge solo da /admin (che verifica il login)
   app.get('/admin/index.html', (req, res) => res.redirect('/admin'));
 
-  // File statici (CSS/JS/immagini, widget)
-  app.use(express.static(PUBLIC_DIR, { index: false, maxAge: config.env.isProduction ? '1h' : 0 }));
+  // File statici. HTML, CSS e JS vengono sempre ricontrollati (risposta 304
+  // se non sono cambiati): dopo un aggiornamento nessuno resta con la
+  // versione vecchia del widget. Immagini e font invece cambiano di rado.
+  app.use(express.static(PUBLIC_DIR, {
+    index: false,
+    setHeaders(res, filePath) {
+      if (/\.(html|css|js)$/.test(filePath)) res.setHeader('Cache-Control', 'no-cache');
+      else res.setHeader('Cache-Control', config.env.isProduction ? 'public, max-age=604800' : 'no-cache');
+    },
+  }));
   app.get('/', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'index.html')));
 
   app.use(errorHandler);

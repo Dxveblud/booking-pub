@@ -23,34 +23,40 @@
     </div>
   </header>
 
-  <nav class="tabs" role="tablist">
-    <button type="button" role="tab" class="tab active" data-tab="calendar">Calendario</button>
-    <button type="button" role="tab" class="tab" data-tab="blocks">Blocchi e ferie</button>
-    <button type="button" role="tab" class="tab" data-tab="services">Servizi</button>
-    <button type="button" role="tab" class="tab" data-tab="hours">Orari</button>
+  <!-- Su desktop sono schede in alto, su telefono una barra in basso come in un'app -->
+  <nav class="tabs" role="tablist" aria-label="Sezioni">
+    <button type="button" role="tab" class="tab active" data-tab="calendar"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg><span>Calendario</span></button>
+    <button type="button" role="tab" class="tab" data-tab="blocks"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M6 6l12 12"/></svg><span>Ferie</span></button>
+    <button type="button" role="tab" class="tab" data-tab="services"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="6.5" cy="17.5" r="2.5"/><path d="M8.6 8l11.4 9M8.6 16L20 7"/></svg><span>Servizi</span></button>
+    <button type="button" role="tab" class="tab" data-tab="hours"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg><span>Orari</span></button>
   </nav>
 
   <main class="content">
     <!-- ============================ CALENDARIO ============================ -->
     <section class="panel" data-panel="calendar">
       <div class="toolbar">
-        <div class="btn-group">
-          <button type="button" class="btn" id="cal-prev" aria-label="Precedente">&#8249;</button>
+        <div class="cal-nav">
+          <button type="button" class="btn btn-icon" id="cal-prev" aria-label="Precedente">&#8249;</button>
+          <h2 class="cal-label" id="cal-label"></h2>
+          <button type="button" class="btn btn-icon" id="cal-next" aria-label="Successivo">&#8250;</button>
+        </div>
+        <div class="toolbar-actions">
           <button type="button" class="btn" id="cal-today">Oggi</button>
-          <button type="button" class="btn" id="cal-next" aria-label="Successivo">&#8250;</button>
+          <div class="segmented" role="group" aria-label="Vista">
+            <button type="button" class="view-btn" data-view="day">Giorno</button>
+            <button type="button" class="view-btn" data-view="week">Settimana</button>
+            <button type="button" class="view-btn" data-view="month">Mese</button>
+          </div>
+          <button type="button" class="btn btn-primary fab" id="cal-new" aria-label="Nuova prenotazione"><span class="fab-plus">+</span><span class="fab-text"> Prenotazione</span></button>
         </div>
-        <h2 class="cal-label" id="cal-label"></h2>
-        <div class="btn-group">
-          <button type="button" class="btn view-btn" data-view="day">Giorno</button>
-          <button type="button" class="btn view-btn" data-view="week">Settimana</button>
-        </div>
-        <button type="button" class="btn btn-primary" id="cal-new">+ Prenotazione</button>
       </div>
       <div class="stats" id="cal-stats"></div>
-      <div class="calendar-wrap">
+      <div class="calendar-wrap" id="calendar-wrap">
         <div class="calendar" id="calendar"></div>
       </div>
-      <div class="legend"><span><i style="background:#f3ede4;border-left:3px solid #b08a4e"></i>Prenotata online</span><span><i style="background:#e9e4dc;border-left:3px solid #1c1917"></i>Inserita a mano</span><span>Clicca su uno spazio libero per aggiungere, su un appuntamento per modificarlo.</span></div>
+      <div class="month" id="month" hidden></div>
+      <div class="agenda" id="agenda" hidden></div>
+      <div class="legend"><span><i class="lg-online"></i>Prenotata online</span><span><i class="lg-admin"></i>Inserita a mano</span><span id="cal-hint"></span></div>
     </section>
 
     <!-- ============================== BLOCCHI ============================= -->

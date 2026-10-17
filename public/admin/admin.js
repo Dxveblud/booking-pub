@@ -74,8 +74,14 @@
   /* Stato                                                               */
   /* =================================================================== */
 
+  var VIEWS = ['day', 'week', 'month'];
+  function savedView() {
+    try { var v = localStorage.getItem('bt-view'); return VIEWS.indexOf(v) >= 0 ? v : null; } catch (e) { return null; }
+  }
+
   var state = {
-    view: window.innerWidth < 720 ? 'day' : 'week',
+    view: savedView() || (window.innerWidth < 720 ? 'day' : 'week'),
+    selected: null, // giorno selezionato nella vista mensile
     anchor: today(),
     settings: null,
     services: [],
@@ -105,10 +111,39 @@
   /* Calendario                                                          */
   /* =================================================================== */
 
+  function firstOfMonth(s) { return s.slice(0, 8) + '01'; }
+  function sameMonth(a, b) { return a.slice(0, 7) === b.slice(0, 7); }
+
+  /** Giorni visibili: 1 (giorno), 7 (settimana) o 6 settimane intere (mese). */
   function visibleDays() {
     if (state.view === 'day') return [state.anchor];
-    var start = mondayOf(state.anchor);
-    return [0, 1, 2, 3, 4, 5, 6].map(function (i) { return addDays(start, i); });
+    var start = mondayOf(state.view === 'month' ? firstOfMonth(state.anchor) : state.anchor);
+    var n = state.view === 'month' ? 42 : 7;
+    var out = [];
+    for (var i = 0; i < n; i += 1) out.push(addDays(start, i));
+    return out;
+  }
+
+  function setView(view) {
+    state.view = view;
+    try { localStorage.setItem('bt-view', view); } catch (e) { /* storage non disponibile */ }
+    loadCalendar();
+  }
+
+  function renderHeader(days) {
+    document.querySelectorAll('.view-btn').forEach(function (b) { b.classList.toggle('active', b.getAttribute('data-view') === state.view); });
+    var label;
+    if (state.view === 'day') label = formatDate(state.anchor, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    else if (state.view === 'month') label = formatDate(state.anchor, { month: 'long', year: 'numeric' });
+    else label = formatDate(days[0], { day: 'numeric', month: 'short' }) + ' – ' + formatDate(days[6], { day: 'numeric', month: 'short', year: 'numeric' });
+    $('cal-label').textContent = label;
+    var isMonth = state.view === 'month';
+    $('calendar-wrap').hidden = isMonth;
+    $('month').hidden = !isMonth;
+    $('agenda').hidden = !isMonth;
+    $('cal-hint').textContent = isMonth
+      ? 'Tocca un giorno per vedere i suoi appuntamenti.'
+      : 'Tocca uno spazio libero per aggiungere, un appuntamento per modificarlo.';
   }
 
   function loadCalendar() {
@@ -120,7 +155,10 @@
       .then(function (res) {
         state.bookings = res[0];
         state.blocks = res[1];
-        renderCalendar(days);
+        renderHeader(days);
+        renderStats(days);
+        if (state.view === 'month') renderMonth(days);
+        else renderCalendar(days);
       })
       .catch(function (err) { toast(err.message, true); });
   }
@@ -149,12 +187,6 @@
     var height = (range.end - range.start) * PX_PER_MIN;
     var t = today();
 
-    document.querySelectorAll('.view-btn').forEach(function (b) { b.classList.toggle('active', b.getAttribute('data-view') === state.view); });
-    $('cal-label').textContent = state.view === 'day'
-      ? formatDate(state.anchor, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
-      : formatDate(days[0], { day: 'numeric', month: 'short' }) + ' – ' + formatDate(days[6], { day: 'numeric', month: 'short', year: 'numeric' });
-
-    renderStats(days);
     cal.innerHTML = '';
     cal.style.setProperty('--days', days.length);
     cal.style.setProperty('--col-min', state.view === 'day' ? '220px' : '96px');
@@ -231,7 +263,9 @@
     var t = today();
     var fmt = new Intl.NumberFormat(LOCALE, { style: 'currency', currency: CURRENCY, maximumFractionDigits: 0 });
     var sum = function (list) { return list.reduce(function (acc, b) { return acc + (b.price || 0); }, 0); };
-    var period = state.bookings;
+    var period = state.view === 'month'
+      ? state.bookings.filter(function (b) { return sameMonth(b.date, state.anchor); })
+      : state.bookings;
     var online = period.filter(function (b) { return b.source === 'online'; }).length;
     var stats = [];
     if (days.indexOf(t) >= 0) {
@@ -242,7 +276,7 @@
       stats.push(['Oggi', oggi.length + ' appunt.']);
       stats.push(['Prossimo', next ? next.start + ' · ' + next.customer.name.split(' ')[0] : '—']);
     }
-    stats.push([state.view === 'day' ? 'Giorno' : 'Settimana', period.length + ' appunt. · ' + fmt.format(sum(period))]);
+    stats.push([{ day: 'Giorno', week: 'Settimana', month: 'Mese' }[state.view], period.length + ' appunt. · ' + fmt.format(sum(period))]);
     stats.push(['Prenotati online', period.length ? Math.round((online / period.length) * 100) + '%' : '—']);
 
     var box = $('cal-stats');
@@ -251,8 +285,126 @@
   }
 
   function shiftCalendar(direction) {
-    state.anchor = addDays(state.anchor, direction * (state.view === 'day' ? 1 : 7));
+    if (state.view === 'month') {
+      var d = parseISO(firstOfMonth(state.anchor));
+      d.setMonth(d.getMonth() + direction);
+      state.anchor = toISO(d);
+      state.selected = null;
+    } else {
+      state.anchor = addDays(state.anchor, direction * (state.view === 'day' ? 1 : 7));
+    }
     loadCalendar();
+  }
+
+  /* ------------------------------ Vista mese ------------------------------ */
+
+  function isClosed(date) { return !(state.settings.openingHours[parseISO(date).getDay()] || []).length; }
+  function bookingsOf(date) { return state.bookings.filter(function (b) { return b.date === date; }); }
+  function blocksOf(date) { return state.blocks.filter(function (b) { return b.date === date; }); }
+
+  function renderMonth(days) {
+    var t = today();
+    if (!state.selected || !sameMonth(state.selected, state.anchor)) {
+      state.selected = sameMonth(t, state.anchor) ? t : firstOfMonth(state.anchor);
+    }
+    var box = $('month');
+    box.innerHTML = '';
+    ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'].forEach(function (n) { box.appendChild(el('div', { class: 'm-head', text: n })); });
+
+    days.forEach(function (d) {
+      var list = bookingsOf(d);
+      var blocked = blocksOf(d);
+      var cls = 'm-cell';
+      if (!sameMonth(d, state.anchor)) cls += ' other';
+      if (d === t) cls += ' today';
+      if (d === state.selected) cls += ' selected';
+      if (isClosed(d)) cls += ' closed';
+      if (blocked.some(function (b) { return b.allDay; })) cls += ' blocked';
+
+      var cell = el('div', { class: cls, role: 'button', tabindex: '0', 'aria-label': formatDate(d, { weekday: 'long', day: 'numeric', month: 'long' }) + ', ' + list.length + ' appuntamenti' });
+      var top = el('div', { class: 'm-top' }, [el('span', { class: 'm-num', text: String(parseISO(d).getDate()) })]);
+      if (list.length) top.appendChild(el('span', { class: 'm-count', text: String(list.length) }));
+      cell.appendChild(top);
+
+      // Su desktop: primi appuntamenti del giorno (su mobile si vedono solo i puntini)
+      var ul = el('div', { class: 'm-list' });
+      list.slice(0, 3).forEach(function (b) {
+        ul.appendChild(el('button', {
+          type: 'button',
+          class: 'm-item' + (b.source === 'admin' ? ' admin' : ''),
+          text: b.start + ' ' + b.customer.name,
+          onclick: function (ev) { ev.stopPropagation(); openBookingDialog(b); },
+        }));
+      });
+      if (list.length > 3) ul.appendChild(el('span', { class: 'm-more', text: '+' + (list.length - 3) + ' altri' }));
+      if (blocked.length && !list.length) ul.appendChild(el('span', { class: 'm-more', text: blocked[0].reason || 'Bloccato' }));
+      cell.appendChild(ul);
+
+      var dots = el('div', { class: 'm-dots' });
+      for (var i = 0; i < Math.min(list.length, 4); i += 1) dots.appendChild(el('i'));
+      cell.appendChild(dots);
+
+      var select = function () {
+        state.selected = d;
+        if (!sameMonth(d, state.anchor)) { state.anchor = d; loadCalendar(); return; }
+        box.querySelectorAll('.m-cell.selected').forEach(function (c) { c.classList.remove('selected'); });
+        cell.classList.add('selected');
+        renderAgenda(d);
+        if (window.innerWidth < 720) $('agenda').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      };
+      cell.addEventListener('click', select);
+      cell.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); select(); } });
+      box.appendChild(cell);
+    });
+    renderAgenda(state.selected);
+  }
+
+  /** Elenco degli appuntamenti del giorno selezionato (sotto la vista mese). */
+  function renderAgenda(date) {
+    var box = $('agenda');
+    box.innerHTML = '';
+    var list = bookingsOf(date);
+    var fmt = new Intl.NumberFormat(LOCALE, { style: 'currency', currency: CURRENCY, maximumFractionDigits: 0 });
+    var total = list.reduce(function (a, b) { return a + (b.price || 0); }, 0);
+
+    var head = el('div', { class: 'agenda-head' }, [
+      el('div', {}, [
+        el('h3', { text: formatDate(date, { weekday: 'long', day: 'numeric', month: 'long' }) }),
+        el('span', { class: 'muted small', text: isClosed(date) && !list.length ? 'Chiuso' : list.length + ' appuntamenti' + (list.length ? ' · ' + fmt.format(total) : '') }),
+      ]),
+      el('div', { class: 'agenda-actions' }, [
+        el('button', { type: 'button', class: 'btn btn-small', text: 'Apri giorno', onclick: function () { state.anchor = date; setView('day'); } }),
+        el('button', { type: 'button', class: 'btn btn-small btn-primary', text: '+ Aggiungi', onclick: function () { openBookingDialog(null, { date: date }); } }),
+      ]),
+    ]);
+    box.appendChild(head);
+
+    blocksOf(date).forEach(function (b) {
+      box.appendChild(el('div', { class: 'agenda-block', text: (b.allDay ? 'Tutto il giorno' : b.start + '–' + b.end) + ' · ' + (b.reason || 'Bloccato') }));
+    });
+
+    if (!list.length) {
+      box.appendChild(el('p', { class: 'muted agenda-empty', text: 'Nessun appuntamento.' }));
+      return;
+    }
+    var ul = el('ul', { class: 'agenda-list' });
+    list.forEach(function (b) {
+      var phone = el('a', { class: 'agenda-phone', href: 'tel:' + b.customer.phone.replace(/[^+\d]/g, ''), title: 'Chiama ' + b.customer.phone, 'aria-label': 'Chiama ' + b.customer.name });
+      phone.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.6 3.5h2.6l1.4 4-2 1.3a12 12 0 0 0 6.6 6.6l1.3-2 4 1.4v2.6A2.1 2.1 0 0 1 18.4 19.5 15 15 0 0 1 4.5 5.6 2.1 2.1 0 0 1 6.6 3.5z"/></svg>';
+      phone.appendChild(el('span', { text: b.customer.phone }));
+      ul.appendChild(el('li', {}, [
+        el('button', { type: 'button', class: 'agenda-item' + (b.source === 'admin' ? ' admin' : ''), onclick: function () { openBookingDialog(b); } }, [
+          el('span', { class: 'agenda-time' }, [el('b', { text: b.start }), el('small', { text: b.end })]),
+          el('span', { class: 'agenda-body' }, [
+            el('strong', { text: b.customer.name }),
+            el('span', { text: b.serviceName + ' · ' + fmt.format(b.price || 0) }),
+            b.notes ? el('em', { text: b.notes }) : null,
+          ]),
+        ]),
+        phone,
+      ]));
+    });
+    box.appendChild(ul);
   }
 
   /* =================================================================== */
@@ -322,6 +474,7 @@
         $('booking-dialog').close();
         toast(editing ? 'Prenotazione aggiornata' : 'Prenotazione aggiunta');
         state.anchor = body.date; // mostra il giorno della prenotazione
+        state.selected = body.date;
         loadCalendar();
       })
       .catch(function (err) { $('booking-error').textContent = err.message; $('booking-error').hidden = false; })
@@ -409,12 +562,14 @@
     var box = $('service-list');
     box.innerHTML = '';
     if (!state.services.length) { box.appendChild(el('p', { class: 'muted', text: 'Nessun servizio. Aggiungine uno.' })); return; }
+    var fmt = new Intl.NumberFormat(LOCALE, { style: 'currency', currency: CURRENCY, minimumFractionDigits: 0 });
 
+    // Ogni servizio è una scheda compatta che si apre per modificarlo
     state.services.forEach(function (s) {
-      var name = el('input', { value: s.name, maxlength: 80, 'aria-label': 'Nome' });
-      var duration = el('input', { type: 'number', min: 5, step: 5, value: s.durationMinutes, 'aria-label': 'Durata in minuti' });
-      var price = el('input', { type: 'number', min: 0, step: 0.5, value: s.price, 'aria-label': 'Prezzo' });
-      var desc = el('input', { value: s.description, maxlength: 300, 'aria-label': 'Descrizione' });
+      var name = el('input', { value: s.name, maxlength: 80 });
+      var duration = el('input', { type: 'number', min: 5, step: 5, value: s.durationMinutes, inputmode: 'numeric' });
+      var price = el('input', { type: 'number', min: 0, step: 0.5, value: s.price, inputmode: 'decimal' });
+      var desc = el('input', { value: s.description, maxlength: 300 });
       var active = el('input', { type: 'checkbox' });
       active.checked = s.active;
 
@@ -435,15 +590,28 @@
           .catch(function (err) { toast(err.message, true); });
       };
 
-      box.appendChild(el('div', { class: 'service-row' + (s.active ? '' : ' inactive') }, [
-        el('label', { class: 'field' }, [el('span', { text: 'Nome' }), name]),
-        el('label', { class: 'field' }, [el('span', { text: 'Minuti' }), duration]),
-        el('label', { class: 'field' }, [el('span', { text: 'Prezzo' }), price]),
-        el('label', { class: 'field' }, [el('span', { text: 'Descrizione' }), desc]),
-        el('div', { class: 'actions' }, [
-          el('label', { class: 'checkbox', style: 'margin:0' }, [active, 'Attivo']),
-          el('button', { type: 'button', class: 'btn btn-primary btn-small', text: 'Salva', onclick: save }),
-          el('button', { type: 'button', class: 'btn btn-danger btn-small', text: 'Elimina', onclick: remove }),
+      box.appendChild(el('details', { class: 'service-card' + (s.active ? '' : ' inactive') }, [
+        el('summary', {}, [
+          el('span', { class: 'sc-main' }, [
+            el('strong', { text: s.name }),
+            el('span', { class: 'muted small', text: s.durationMinutes + ' min' + (s.active ? '' : ' · non prenotabile online') }),
+          ]),
+          el('span', { class: 'sc-price', text: fmt.format(s.price) }),
+          el('span', { class: 'sc-chevron', 'aria-hidden': 'true', text: '›' }),
+        ]),
+        el('div', { class: 'sc-body' }, [
+          el('label', { class: 'field sc-name' }, [el('span', { text: 'Nome' }), name]),
+          el('div', { class: 'grid-2 sc-nums' }, [
+            el('label', { class: 'field' }, [el('span', { text: 'Durata (min)' }), duration]),
+            el('label', { class: 'field' }, [el('span', { text: 'Prezzo' }), price]),
+          ]),
+          el('label', { class: 'field' }, [el('span', { text: 'Descrizione' }), desc]),
+          el('div', { class: 'sc-actions' }, [
+            el('label', { class: 'checkbox' }, [active, 'Prenotabile online']),
+            el('span', { class: 'spacer' }),
+            el('button', { type: 'button', class: 'btn btn-danger btn-small', text: 'Elimina', onclick: remove }),
+            el('button', { type: 'button', class: 'btn btn-primary btn-small', text: 'Salva', onclick: save }),
+          ]),
         ]),
       ]));
     });
@@ -533,10 +701,12 @@
 
     $('cal-prev').addEventListener('click', function () { shiftCalendar(-1); });
     $('cal-next').addEventListener('click', function () { shiftCalendar(1); });
-    $('cal-today').addEventListener('click', function () { state.anchor = today(); loadCalendar(); });
-    $('cal-new').addEventListener('click', function () { openBookingDialog(null, { date: state.anchor }); });
+    $('cal-today').addEventListener('click', function () { state.anchor = today(); state.selected = today(); loadCalendar(); });
+    $('cal-new').addEventListener('click', function () {
+      openBookingDialog(null, { date: state.view === 'month' ? (state.selected || state.anchor) : state.anchor });
+    });
     document.querySelectorAll('.view-btn').forEach(function (b) {
-      b.addEventListener('click', function () { state.view = b.getAttribute('data-view'); loadCalendar(); });
+      b.addEventListener('click', function () { setView(b.getAttribute('data-view')); });
     });
 
     $('booking-form').addEventListener('submit', saveBooking);

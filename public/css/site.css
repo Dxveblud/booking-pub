@@ -204,3 +204,15 @@ p { margin: 0; }
   html { scroll-behavior: auto; }
   .btn, .gallery img, .mobile-cta { transition: none; }
 }
+
+/* Sezione scura (es. "Chi siamo"): stesso colore dell'hero, stacca dalle sezioni chiare */
+.section-dark { background: var(--ink); color: var(--on-dark); position: relative; overflow: hidden; }
+.section-dark::before { content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(55% 60% at 50% 0%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 70%); }
+.section-dark > .container { position: relative; }
+.section-dark .lead, .section-dark .highlights span, .section-dark .reviews-count { color: var(--on-dark-muted); }
+.section-dark .highlights li { border-top-color: rgba(255, 255, 255, .12); }
+.section-dark .reviews-score { color: var(--on-dark); }
+.section-dark .about-photo { background: rgba(255, 255, 255, .04); }
+.section-dark .btn-outline { color: var(--on-dark); border-color: rgba(255, 255, 255, .4); }
+.section-dark .btn-outline:hover { background: var(--accent); border-color: var(--accent); color: var(--ink); }

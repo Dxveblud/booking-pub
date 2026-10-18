@@ -114,7 +114,7 @@ async function requestPasswordReset(username) {
     outro: 'Se non sei stato tu, ignora questa email: la password attuale resta valida.',
     footer: `Email inviata da ${config.platform.name}.`,
   });
-  await mailer.sendMail({ to, subject: 'Reimposta la password del pannello', text, html });
+  await mailer.sendMail({ to, subject: 'Reimposta la password del pannello', text, html, fromName: config.platform.name });
   return true;
 }
 

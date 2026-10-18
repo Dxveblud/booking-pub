@@ -33,12 +33,25 @@ function getTransport() {
   return transport;
 }
 
+/**
+ * Mittente. L'indirizzo è sempre quello di MAIL_FROM (il dominio verificato);
+ * il nome visualizzato può cambiare: per le email ai clienti è il nome del
+ * negozio, così vedono "IM Hair Studio" e non un generico "Prenotazioni".
+ */
+function sender(fromName) {
+  const raw = process.env.MAIL_FROM || process.env.SMTP_USER || '';
+  const match = raw.match(/^\s*"?([^"<]*?)"?\s*<([^>]+)>\s*$/);
+  const address = match ? match[2].trim() : raw.trim();
+  const name = String(fromName || (match ? match[1] : '') || '').replace(/[\r\n"<>]/g, '').trim();
+  return name ? { name, address } : address;
+}
+
 /** Invia un'email. Restituisce false (senza errori) se l'email non è configurata. */
-async function sendMail({ to, subject, text, html, replyTo }) {
+async function sendMail({ to, subject, text, html, replyTo, fromName }) {
   const t = getTransport();
   if (!t) return false;
   await t.sendMail({
-    from: process.env.MAIL_FROM || process.env.SMTP_USER,
+    from: sender(fromName),
     to,
     subject,
     text,
@@ -54,4 +67,4 @@ function setTransport(custom) {
   configured = Boolean(custom);
 }
 
-module.exports = { sendMail, isEnabled, setTransport };
+module.exports = { sendMail, isEnabled, setTransport, sender };

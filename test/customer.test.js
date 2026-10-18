@@ -115,6 +115,7 @@ test('prenotazione con email: conferma al cliente con il link per disdire', asyn
   assert.match(confirm.subject, /^Prenotazione confermata/);
   assert.ok(confirm.text.includes(`https://booking.example.com${res.data.manageUrl}`));
   assert.equal(confirm.replyTo, 'info@sole.example');
+  assert.equal(confirm.from.name, 'Barberia Sole', 'il cliente vede come mittente il nome del negozio');
   assert.equal(mailsTo(OWNER_MAIL).length, 1);
 
   const token = res.data.manageUrl.split('/').pop();

@@ -49,7 +49,7 @@ function build(business, booking, { eyebrow, subject, intro, outro, withLink = t
     footer: `Hai ricevuto questa email perché hai prenotato da ${business.name}.`,
     links: business.phone ? { Telefono: `tel:${business.phone.replace(/[^+\d]/g, '')}` } : {},
   });
-  return { subject, text, html, replyTo: business.email || undefined };
+  return { subject, text, html, replyTo: business.email || undefined, fromName: business.name };
 }
 
 const firstName = (booking) => String(booking.customer.name || '').split(' ')[0];
@@ -95,7 +95,7 @@ const TEMPLATES = {
       outro: 'Se qualcosa non è andato come speravi, rispondi a questa email: ci teniamo a saperlo.',
       footer: `Hai ricevuto questa email perché hai avuto un appuntamento da ${b.name}.`,
     });
-    return { subject: `Com'è andata da ${b.name}?`, text, html, replyTo: b.email || undefined };
+    return { subject: `Com'è andata da ${b.name}?`, text, html, replyTo: b.email || undefined, fromName: b.name };
   },
 };
 

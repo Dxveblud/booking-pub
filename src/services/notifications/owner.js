@@ -38,7 +38,7 @@ function message(business, booking, { eyebrow, subject }) {
     footer: FOOTER,
     links: { Telefono: `tel:${booking.customer.phone.replace(/[^+\d]/g, '')}` },
   });
-  return { subject, text, html, replyTo: booking.customer.email || undefined };
+  return { subject, text, html, replyTo: booking.customer.email || undefined, fromName: `Prenotazioni ${business.name}` };
 }
 
 function buildNewBookingEmail(business, booking) {

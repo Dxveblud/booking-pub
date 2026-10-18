@@ -53,6 +53,7 @@
           <button type="button" class="btn btn-primary fab" id="cal-new" aria-label="Nuova prenotazione"><span class="fab-plus">+</span><span class="fab-text"> Prenotazione</span></button>
         </div>
       </div>
+      <div class="staff-chips" id="staff-filter" role="group" aria-label="Mostra le agende di" hidden></div>
       <div class="stats" id="cal-stats"></div>
       <div class="calendar-wrap" id="calendar-wrap">
         <div class="calendar" id="calendar"></div>
@@ -70,6 +71,7 @@
           <label class="field"><span>Dal</span><input type="date" name="fromDate" required></label>
           <label class="field"><span>Al <small>(incluso)</small></span><input type="date" name="toDate"></label>
         </div>
+        <label class="field" id="block-staff-field" hidden><span>Per chi</span><select name="staffId"><option value="">Tutto il negozio</option></select></label>
         <label class="checkbox"><input type="checkbox" name="allDay" checked> Giornata intera</label>
         <div class="grid-2" id="block-times" hidden>
           <label class="field"><span>Dalle</span><input type="time" name="start" step="300"></label>
@@ -86,6 +88,15 @@
 
     <!-- ============================== SERVIZI ============================= -->
     <section class="panel" data-panel="services" hidden>
+      <div class="card">
+        <h2>Collaboratori</h2>
+        <p class="muted small">Se in negozio lavorate in più persone, aggiungi i collaboratori: ognuno ha la sua agenda e due clienti possono prenotare alla stessa ora con persone diverse. Online il cliente sceglie con chi, oppure "chiunque". Senza collaboratori il negozio ha un'agenda unica.</p>
+        <div id="staff-list"></div>
+        <form class="inline-form" id="staff-form">
+          <input name="name" required maxlength="60" placeholder="Nome (es. Marco)" aria-label="Nome del collaboratore">
+          <button type="submit" class="btn btn-primary">Aggiungi</button>
+        </form>
+      </div>
       <form class="card" id="service-form">
         <h2>Nuovo servizio</h2>
         <div class="grid-3">
@@ -114,6 +125,12 @@
           <label class="field"><span>Preavviso minimo (min)</span><input name="minNoticeMinutes" type="number" min="0" step="15" required></label>
           <label class="field"><span>Prenotabile fino a (giorni)</span><input name="maxDaysAhead" type="number" min="1" max="365" required></label>
         </div>
+        <h2 class="mt">Disdette e promemoria</h2>
+        <div class="grid-2">
+          <label class="field"><span>Il cliente può disdire online fino a (ore prima)</span><input name="cancelNoticeHours" type="number" min="0" max="168" step="1" required></label>
+          <label class="field"><span>Promemoria email al cliente (ore prima, 0 = no)</span><input name="reminderHours" type="number" min="0" max="168" step="1" required></label>
+        </div>
+        <p class="muted small">Il link per disdire e il promemoria arrivano ai clienti che lasciano l'email prenotando.</p>
         <button type="submit" class="btn btn-primary">Salva orari</button>
       </form>
     </section>
@@ -143,6 +160,10 @@
           <label class="field"><span>Instagram <small>(link)</small></span><input name="instagram" maxlength="120" placeholder="https://instagram.com/…"></label>
         </div>
 
+        <h2 class="mt">Avvisi</h2>
+        <label class="field"><span>Email per gli avvisi <small>(ricevi un'email a ogni prenotazione online; vuoto = nessun avviso)</small></span><input name="notifyEmail" type="email" maxlength="120" placeholder="tuonome@gmail.com" autocomplete="email"></label>
+        <p class="muted small" id="notify-warning" hidden>L'invio delle email non è ancora attivo sul server: l'indirizzo viene salvato e gli avvisi partiranno appena sarà configurato.</p>
+
         <h2 class="mt">Aspetto</h2>
         <div class="grid-2">
           <label class="field color-field"><span>Colore principale</span><input type="color" name="primaryColor"></label>
@@ -166,6 +187,17 @@
         <label class="btn btn-small">+ Aggiungi foto<input type="file" id="gallery-add" accept="image/png,image/jpeg,image/webp" multiple hidden></label>
 
         <div class="form-save"><button type="submit" class="btn btn-primary">Salva modifiche</button></div>
+      </form>
+
+      <form class="card" id="password-form" novalidate>
+        <h2>La tua password</h2>
+        <p class="muted small">Cambiandola, gli altri dispositivi collegati con questo account vengono scollegati.</p>
+        <div class="grid-3">
+          <label class="field"><span>Password attuale</span><input name="current" type="password" autocomplete="current-password" required></label>
+          <label class="field"><span>Nuova password <small>(almeno 8 caratteri)</small></span><input name="password" type="password" autocomplete="new-password" minlength="8" required></label>
+          <label class="field"><span>Ripeti la nuova</span><input name="repeat" type="password" autocomplete="new-password" minlength="8" required></label>
+        </div>
+        <button type="submit" class="btn btn-primary">Cambia password</button>
       </form>
     </section>
 
@@ -195,6 +227,7 @@
     <form id="booking-form" novalidate>
       <h2 id="booking-dialog-title">Nuova prenotazione</h2>
       <label class="field"><span>Servizio</span><select name="serviceId" required></select></label>
+      <label class="field" id="booking-staff-field" hidden><span>Con</span><select name="staffId"></select></label>
       <div class="grid-2">
         <label class="field"><span>Giorno</span><input type="date" name="date" required></label>
         <label class="field"><span>Ora</span><input type="time" name="time" step="300" required></label>

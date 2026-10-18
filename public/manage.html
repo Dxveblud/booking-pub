@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <link rel="icon" href="/img/logo.svg" type="image/svg+xml">
+  <title>Il tuo appuntamento</title>
+  <link rel="stylesheet" href="/css/fonts.css">
+  <link rel="stylesheet" href="/widget/booking.css">
+  <script src="/js/manage.js" defer></script>
+</head>
+<body class="mg-page">
+  <div class="bk mg">
+    <header class="bk-header">
+      <img class="bk-logo" id="mg-logo" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="" width="36" height="36">
+      <div class="bk-title">
+        <strong id="mg-business">Il tuo appuntamento</strong>
+        <span id="mg-label">Caricamento…</span>
+      </div>
+    </header>
+
+    <main class="bk-body">
+      <div class="bk-summary" id="mg-summary" hidden></div>
+      <p class="mg-status" id="mg-status" hidden></p>
+      <p class="bk-error" id="mg-error" hidden></p>
+      <div class="mg-actions" id="mg-actions" hidden>
+        <button type="button" class="bk-primary mg-cancel" id="mg-cancel">Disdici l'appuntamento</button>
+        <a class="bk-secondary" id="mg-call" href="#" hidden>Chiama il negozio</a>
+        <a class="bk-link" id="mg-book" href="#">Prenota un altro appuntamento</a>
+      </div>
+      <div class="bk-loading" id="mg-loading"><span class="bk-spinner"></span></div>
+    </main>
+  </div>
+</body>
+</html>

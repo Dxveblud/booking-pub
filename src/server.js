@@ -8,12 +8,16 @@ const { createApp } = require('./app');
 const { bootstrap } = require('./services/bootstrap');
 const { registerIntegrations } = require('./services/integrations');
 const { startDemoMode } = require('./services/demoService');
+const { startReminderJob } = require('./services/notifications/customer');
+const { startPrivacyJob } = require('./services/privacyService');
 
 async function main() {
   await connectDb();
   await bootstrap();
   registerIntegrations();
   startDemoMode(); // attiva solo se config.json → demo.enabled
+  startReminderJob(); // promemoria email ai clienti (se l'email è configurata)
+  startPrivacyJob(); // cancella i dati dei clienti dopo il periodo di conservazione
 
   const app = createApp();
   const server = app.listen(config.env.port, (err) => {

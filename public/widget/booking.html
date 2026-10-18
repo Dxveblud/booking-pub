@@ -38,6 +38,12 @@
         <ul class="bk-services" id="bk-services"></ul>
       </section>
 
+      <!-- 1b. Collaboratore (solo nei negozi che ne hanno più di uno) -->
+      <section class="bk-step" data-step="staff" hidden>
+        <div class="bk-chosen" id="bk-chosen-staff"></div>
+        <ul class="bk-services bk-staff" id="bk-staff"></ul>
+      </section>
+
       <!-- 2. Giorno -->
       <section class="bk-step" data-step="day" hidden>
         <div class="bk-chosen" id="bk-chosen-day"></div>
@@ -64,12 +70,18 @@
             <span>Cellulare</span>
             <input name="phone" type="tel" autocomplete="tel" inputmode="tel" required maxlength="20" placeholder="+39 333 123 4567">
           </label>
+          <label class="bk-field" id="bk-email-field" hidden>
+            <span>Email <small>facoltativa: ti mandiamo conferma e promemoria</small></span>
+            <input name="email" type="email" autocomplete="email" inputmode="email" maxlength="120" placeholder="mario@esempio.it">
+          </label>
           <label class="bk-field">
             <span>Note <small>facoltative</small></span>
             <textarea name="notes" rows="2" maxlength="500" placeholder="Es. prima volta, richieste particolari…"></textarea>
           </label>
+          <!-- Campo trappola per i bot: invisibile, un utente vero lo lascia vuoto -->
+          <div class="bk-hp" aria-hidden="true"><label>Sito web <input name="website" tabindex="-1" autocomplete="off"></label></div>
           <p class="bk-error" id="bk-form-error" hidden></p>
-          <p class="bk-privacy">Usiamo nome e numero solo per gestire il tuo appuntamento.</p>
+          <p class="bk-privacy">Usiamo i tuoi dati solo per gestire l'appuntamento. <a id="bk-privacy-link" href="/privacy" target="_blank" rel="noopener">Informativa privacy</a></p>
         </form>
       </section>
 
@@ -87,10 +99,12 @@
         <h2>Ci vediamo presto!</h2>
         <p id="bk-done-text"></p>
         <div class="bk-ticket" id="bk-ticket"></div>
+        <p class="bk-done-note" id="bk-done-email" hidden></p>
         <button type="button" class="bk-secondary" id="bk-ics">
           <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3.5 10h17M8 3v4M16 3v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
           Aggiungi al calendario
         </button>
+        <a class="bk-link" id="bk-manage" href="#" target="_blank" rel="noopener" hidden>Devi disdire? Apri il link della prenotazione</a>
         <button type="button" class="bk-link" id="bk-restart">Prenota un altro appuntamento</button>
       </section>
 

@@ -7,12 +7,14 @@ const express = require('express');
 const rateLimit = require('express-rate-limit');
 const requireAdmin = require('../middleware/requireAdmin');
 const { loadAdminContext, requireSuper } = require('../middleware/shop');
-const { authenticate } = require('../services/adminService');
+const { authenticate, changePassword, requestPasswordReset, resetPassword } = require('../services/adminService');
 const bookingService = require('../services/bookingService');
 const catalog = require('../services/catalogService');
+const staffService = require('../services/staffService');
 const blocks = require('../services/blockService');
 const businesses = require('../services/businessService');
 const { saveUpload, MAX_UPLOAD_BYTES } = require('../services/uploadService');
+const mailer = require('../services/mailer');
 const { listTemplates } = require('../services/templates');
 const { getSettings, updateSettings, serializeSettings } = require('../services/settingsService');
 const { Booking } = require('../models');
@@ -32,6 +34,15 @@ const loginLimiter = rateLimit({
   message: { error: { code: 'TOO_MANY_REQUESTS', message: 'Troppi tentativi di accesso, riprova più tardi' } },
 });
 
+// Recupero password: qui si contano tutte le richieste (rispondono sempre "ok")
+const resetLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 5,
+  standardHeaders: 'draft-8',
+  legacyHeaders: false,
+  message: { error: { code: 'TOO_MANY_REQUESTS', message: 'Troppe richieste, riprova più tardi' } },
+});
+
 router.post('/login', loginLimiter, async (req, res) => {
   const { username, password } = req.body || {};
   const user = await authenticate(username, password);
@@ -42,6 +53,7 @@ router.post('/login', loginLimiter, async (req, res) => {
   await new Promise((resolve, reject) => req.session.regenerate((err) => (err ? reject(err) : resolve())));
   req.session.adminId = String(user._id);
   req.session.businessId = user.businessId;
+  req.session.loginAt = Date.now();
   return res.json({ username: user.username, role: user.role });
 });
 
@@ -53,14 +65,36 @@ router.post('/logout', (req, res, next) => {
   });
 });
 
+// Password dimenticata: stessa risposta che lo username esista o no
+router.post('/password/forgot', resetLimiter, async (req, res) => {
+  await requestPasswordReset((req.body || {}).username).catch((err) => console.error('[password]', err.message));
+  res.json({ ok: true });
+});
+
+router.post('/password/reset', resetLimiter, async (req, res) => {
+  const { token, password } = req.body || {};
+  await resetPassword(token, password);
+  res.json({ ok: true });
+});
+
 // Da qui in poi serve il login
 router.use(requireAdmin, loadAdminContext);
+
+router.put('/password', loginLimiter, async (req, res) => {
+  const { current, password } = req.body || {};
+  await changePassword(req.admin, current, password);
+  // Questa sessione resta valida, le altre aperte con la vecchia password no
+  req.session.loginAt = Date.now();
+  res.json({ ok: true });
+});
 
 router.get('/me', (req, res) => {
   res.json({
     username: req.admin.username,
     role: req.admin.role,
     business: businesses.serializeAdmin(req.business),
+    // L'invio email è configurato sul server? (il pannello avvisa se manca)
+    features: { email: mailer.isEnabled() },
   });
 });
 
@@ -100,6 +134,25 @@ router.put('/bookings/:id', async (req, res) => {
 router.delete('/bookings/:id', async (req, res) => {
   const booking = await bookingService.cancelBooking(req.business, req.params.id);
   res.json(bookingService.serializeBooking(booking));
+});
+
+/* ---------------------------- Collaboratori ----------------------------- */
+
+router.get('/staff', async (req, res) => {
+  res.json((await staffService.listStaff(req.business.slug)).map(staffService.serializeStaff));
+});
+
+router.post('/staff', async (req, res) => {
+  res.status(201).json(staffService.serializeStaff(await staffService.createStaff(req.business.slug, req.body || {})));
+});
+
+router.put('/staff/:id', async (req, res) => {
+  res.json(staffService.serializeStaff(await staffService.updateStaff(req.business.slug, req.params.id, req.body || {})));
+});
+
+router.delete('/staff/:id', async (req, res) => {
+  await staffService.deleteStaff(req.business.slug, req.params.id);
+  res.json({ ok: true });
 });
 
 /* ------------------------------- Servizi -------------------------------- */

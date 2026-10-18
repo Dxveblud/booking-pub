@@ -131,6 +131,8 @@ h2 { font-size: 1.1rem; }
 .login-page { background: #1c1917 radial-gradient(circle at 30% 20%, rgba(176,138,78,.18), transparent 55%); }
 .login-card { width: 100%; max-width: 380px; background: var(--card); padding: 32px 28px; border-radius: 18px; border: 1px solid var(--border); box-shadow: 0 30px 80px rgba(0,0,0,.35); }
 .login-logo { border-radius: 12px; margin-bottom: 16px; }
+.login-link { display: block; margin: 14px auto 0; border: 0; background: none; color: var(--muted); font: inherit; font-size: .9rem; text-decoration: underline; cursor: pointer; }
+.notice { background: #eef6f0; color: #1f5e3d; border-radius: 10px; padding: 10px 12px; font-size: .9rem; margin: 8px 0; }
 
 /* ------------------------------ Desktop ----------------------------- */
 @media (min-width: 720px) {
@@ -270,7 +272,7 @@ h2 { font-size: 1.1rem; }
   .toast { bottom: calc(150px + env(safe-area-inset-bottom)); }
 
   /* Statistiche in una riga scorrevole */
-  .stats { display: flex; overflow-x: auto; gap: 8px; scrollbar-width: none; margin: 0 -12px 12px; padding: 0 12px; scroll-snap-type: x mandatory; }
+  .stats { display: flex; overflow-x: auto; gap: 8px; scrollbar-width: none; margin: 0 -12px 12px; padding: 0 12px; scroll-snap-type: x mandatory; scroll-padding-inline: 12px; }
   .stats::-webkit-scrollbar { display: none; }
   .stat { flex: 0 0 auto; min-width: 128px; max-width: 70vw; padding: 8px 12px; scroll-snap-align: start; }
   .stat b { font-size: 1rem; }
@@ -347,3 +349,20 @@ h3.sub { font-size: .95rem; margin: 20px 0 10px; font-family: 'Inter', system-ui
   .form-save { bottom: calc(64px + env(safe-area-inset-bottom)); margin: 20px -14px -14px; }
   .role-badge { display: none; }
 }
+
+/* ---------------------------- Collaboratori --------------------------- */
+.staff-chips { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; margin-bottom: 10px; }
+.staff-chips::-webkit-scrollbar { display: none; }
+.chip-btn { flex: none; font: inherit; font-size: .88rem; border: 1px solid var(--border); background: var(--card); color: var(--text);
+  padding: 7px 14px; border-radius: 999px; cursor: pointer; }
+.chip-btn.active { background: var(--primary); border-color: var(--primary); color: #fff; font-weight: 600; }
+.cal-head.staff-head b { font-size: .95rem; font-family: inherit; font-weight: 600; }
+.cal-event.unassigned { border-left-style: dashed; background: #fbeee6; }
+.cal-block.staff { opacity: .85; }
+.inline-form { display: flex; gap: 8px; margin-top: 12px; }
+.inline-form input { flex: 1; min-width: 0; font: inherit; font-size: 16px; padding: 9px 10px; border: 1px solid var(--border); border-radius: 8px; background: #fff; color: var(--text); }
+.check-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 4px 12px; margin-top: 4px; }
+.staff-hours { margin: 8px 0 12px; }
+.staff-services { margin: 4px 0 12px; }
+.staff-services strong { font-size: .9rem; }
+.staff-services .checkbox { justify-content: flex-start; }

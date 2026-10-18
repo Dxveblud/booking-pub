@@ -1,4 +1,11 @@
 {
+  "platform": {
+    "name": "Dxveblud Booking",
+    "email": "",
+    "phone": "",
+    "demoShop": "demo",
+    "landing": true
+  },
   "business": {
     "id": "demo",
     "name": "Barberia Novecento",

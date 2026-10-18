@@ -24,8 +24,9 @@ async function resolvePublicShop(req, res, next) {
 
 async function loadAdminContext(req, res, next) {
   const user = await AdminUser.findById(req.session.adminId);
-  if (!user) {
-    // Utente eliminato: la sessione non vale più
+  // Utente eliminato, o password cambiata dopo il login: la sessione non vale più
+  const stale = user && user.passwordChangedAt && (req.session.loginAt || 0) < user.passwordChangedAt.getTime();
+  if (!user || stale) {
     req.session.destroy(() => {});
     throw new HttpError(401, 'Accesso richiesto', 'UNAUTHORIZED');
   }

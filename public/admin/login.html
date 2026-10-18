@@ -11,6 +11,7 @@
   <script src="/admin/login.js" defer></script>
 </head>
 <body class="login-page">
+  <!-- Accesso -->
   <form class="login-card" id="login-form">
     <img class="login-logo" src="/img/logo.svg" alt="" width="52" height="52">
     <h1>Area riservata</h1>
@@ -23,8 +24,42 @@
       <span>Password</span>
       <input name="password" type="password" autocomplete="current-password" required>
     </label>
+    <p class="notice" id="login-notice" hidden>Password aggiornata: ora accedi con quella nuova.</p>
     <p class="error" id="login-error" hidden></p>
     <button type="submit" class="btn btn-primary btn-block">Accedi</button>
+    <button type="button" class="login-link" data-show="forgot-form">Password dimenticata?</button>
+  </form>
+
+  <!-- Password dimenticata -->
+  <form class="login-card" id="forgot-form" hidden>
+    <img class="login-logo" src="/img/logo.svg" alt="" width="52" height="52">
+    <h1>Password dimenticata</h1>
+    <p class="muted">Scrivi il tuo username: ti mandiamo un link per sceglierne una nuova all'email del negozio.</p>
+    <label class="field">
+      <span>Username</span>
+      <input name="username" autocomplete="username" required>
+    </label>
+    <p class="error" id="forgot-error" hidden></p>
+    <p class="notice" id="forgot-done" hidden>Se l'account esiste e ha un'email collegata, tra poco ti arriva il link (controlla anche lo spam). Non ti arriva niente? Contatta chi ti ha dato l'accesso.</p>
+    <button type="submit" class="btn btn-primary btn-block">Mandami il link</button>
+    <button type="button" class="login-link" data-show="login-form">Torna all'accesso</button>
+  </form>
+
+  <!-- Nuova password (dal link ricevuto per email) -->
+  <form class="login-card" id="reset-form" hidden>
+    <img class="login-logo" src="/img/logo.svg" alt="" width="52" height="52">
+    <h1>Nuova password</h1>
+    <p class="muted">Scegli una password di almeno 8 caratteri.</p>
+    <label class="field">
+      <span>Nuova password</span>
+      <input name="password" type="password" autocomplete="new-password" minlength="8" required>
+    </label>
+    <label class="field">
+      <span>Ripeti la password</span>
+      <input name="repeat" type="password" autocomplete="new-password" minlength="8" required>
+    </label>
+    <p class="error" id="reset-error" hidden></p>
+    <button type="submit" class="btn btn-primary btn-block">Salva la nuova password</button>
   </form>
 </body>
 </html>

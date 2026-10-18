@@ -6,4 +6,5 @@ module.exports = {
   Service: require('./Service'),
   Settings: require('./Settings'),
   SlotLock: require('./SlotLock'),
+  Staff: require('./Staff'),
 };

@@ -10,6 +10,7 @@ const { badRequest, notFound, conflict } = require('../utils/errors');
 const SLUG_RE = /^[a-z0-9](?:[a-z0-9-]{1,38}[a-z0-9])$/;
 const RESERVED = new Set(['admin', 'api', 'widget', 's', 'img', 'css', 'js', 'fonts', 'uploads', 'health', 'www']);
 const COLOR_RE = /^#[0-9a-f]{6}$/i;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const CACHE_MS = 30 * 1000;
 
 /* -------------------------------- Cache --------------------------------- */
@@ -60,7 +61,14 @@ function serializePublic(b) {
 
 /** Dati per il pannello (titolare e super admin). */
 function serializeAdmin(b) {
-  return { ...serializePublic(b), type: b.type, active: b.active, notes: b.notes, createdAt: b.createdAt };
+  return {
+    ...serializePublic(b),
+    notifyEmail: b.notifyEmail || '',
+    type: b.type,
+    active: b.active,
+    notes: b.notes,
+    createdAt: b.createdAt,
+  };
 }
 
 /* ------------------------------ Validazione ------------------------------ */
@@ -90,6 +98,11 @@ function applyEditable(doc, body) {
     if (body[key] !== undefined) doc[key] = str(body[key], max);
   }
   if (body.name !== undefined && !doc.name) throw badRequest('Il nome del negozio è obbligatorio');
+  if (body.notifyEmail !== undefined) {
+    const email = str(body.notifyEmail, 120).toLowerCase();
+    if (email && !EMAIL_RE.test(email)) throw badRequest('Email per gli avvisi non valida');
+    doc.notifyEmail = email;
+  }
   for (const key of ['primaryColor', 'accentColor']) {
     if (body[key] !== undefined) {
       if (!COLOR_RE.test(body[key])) throw badRequest('Colore non valido (usa il formato #rrggbb)');

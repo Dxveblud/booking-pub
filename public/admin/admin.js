@@ -98,7 +98,85 @@
     blocks: [],
     editing: null, // prenotazione in modifica nella modale
     me: null, // utente loggato e negozio corrente
+    staff: [], // collaboratori del negozio (vuoto = agenda unica)
+    staffFilter: savedStaffFilter(), // id del collaboratore mostrato nel calendario ('' = tutti)
   };
+
+  function savedStaffFilter() {
+    try { return localStorage.getItem('bt-staff') || ''; } catch (e) { return ''; }
+  }
+
+  /* =================================================================== */
+  /* Collaboratori: filtri e utilità                                     */
+  /* =================================================================== */
+
+  function loadStaff() {
+    return api('/staff').then(function (list) {
+      state.staff = list;
+      // Filtro su un collaboratore che non c'è più: torna a "tutti"
+      if (state.staffFilter && !list.some(function (s) { return s.id === state.staffFilter && s.active; })) state.staffFilter = '';
+      return list;
+    });
+  }
+  function activeStaff() { return state.staff.filter(function (s) { return s.active; }); }
+  function staffMode() { return activeStaff().length > 0; }
+  function staffName(id) {
+    var s = state.staff.filter(function (x) { return x.id === id; })[0];
+    return s ? s.name : '';
+  }
+
+  /** Prenotazioni e blocchi visibili con il filtro attuale (quelle non assegnate si vedono sempre). */
+  function filteredBookings() {
+    if (!state.staffFilter) return state.bookings;
+    return state.bookings.filter(function (b) { return !b.staffId || b.staffId === state.staffFilter; });
+  }
+  function filteredBlocks() {
+    if (!state.staffFilter) return state.blocks;
+    return state.blocks.filter(function (b) { return !b.staffId || b.staffId === state.staffFilter; });
+  }
+
+  function renderStaffFilter() {
+    var box = $('staff-filter');
+    var list = activeStaff();
+    box.hidden = !list.length;
+    box.innerHTML = '';
+    if (!list.length) return;
+    [{ id: '', name: 'Tutti' }].concat(list).forEach(function (s) {
+      box.appendChild(el('button', {
+        type: 'button',
+        class: 'chip-btn' + (state.staffFilter === s.id ? ' active' : ''),
+        'aria-pressed': state.staffFilter === s.id ? 'true' : 'false',
+        text: s.name,
+        onclick: function () {
+          state.staffFilter = s.id;
+          try { localStorage.setItem('bt-staff', s.id); } catch (e) { /* storage non disponibile */ }
+          loadCalendar();
+        },
+      }));
+    });
+  }
+
+  /** Sistema gli appuntamenti sovrapposti uno accanto all'altro (corsie). */
+  function layoutLanes(items) {
+    items.sort(function (a, b) { return a.s - b.s || b.e - a.e; });
+    var groups = [];
+    var current = null;
+    var groupEnd = -1;
+    items.forEach(function (it) {
+      if (!current || it.s >= groupEnd) { current = []; groups.push(current); groupEnd = it.e; } else groupEnd = Math.max(groupEnd, it.e);
+      current.push(it);
+    });
+    groups.forEach(function (g) {
+      var lanes = [];
+      g.forEach(function (it) {
+        var i = lanes.findIndex(function (end) { return end <= it.s; });
+        if (i < 0) { i = lanes.length; lanes.push(it.e); } else lanes[i] = it.e;
+        it.lane = i;
+      });
+      g.forEach(function (it) { it.lanes = lanes.length; });
+    });
+    return items;
+  }
 
   /* =================================================================== */
   /* Tabs                                                                */
@@ -113,7 +191,7 @@
     document.querySelectorAll('.panel').forEach(function (p) { p.hidden = p.getAttribute('data-panel') !== name; });
     if (name === 'calendar') loadCalendar();
     if (name === 'blocks') loadBlocks();
-    if (name === 'services') loadServices().then(renderServices);
+    if (name === 'services') Promise.all([loadServices(), loadStaff(), loadSettings()]).then(function () { renderServices(); renderStaffList(); });
     if (name === 'hours') loadSettings().then(renderHours);
     if (name === 'shop') renderShopPanel();
     if (name === 'platform') loadPlatform();
@@ -163,10 +241,11 @@
     var from = days[0];
     var to = days[days.length - 1];
     var q = '?from=' + from + '&to=' + to;
-    return Promise.all([api('/bookings' + q), api('/blocks' + q), loadSettings(), loadServices()])
+    return Promise.all([api('/bookings' + q), api('/blocks' + q), loadSettings(), loadServices(), loadStaff()])
       .then(function (res) {
         state.bookings = res[0];
         state.blocks = res[1];
+        renderStaffFilter();
         renderHeader(days);
         renderStats(days);
         if (state.view === 'month') renderMonth(days);
@@ -193,23 +272,58 @@
     return { start: Math.floor(min / 60) * 60, end: Math.min(1440, Math.ceil(max / 60) * 60) };
   }
 
+  /**
+   * Colonne del calendario. Normalmente una per giorno; nella vista giornaliera
+   * di un negozio con collaboratori (filtro "Tutti") una per collaboratore,
+   * più "Da assegnare" se quel giorno ci sono appuntamenti senza collaboratore.
+   * staffId: undefined = tutte le agende, '' = solo non assegnati, id = quel collaboratore.
+   */
+  function calendarColumns(days) {
+    var list = activeStaff();
+    if (state.view === 'day' && list.length && !state.staffFilter) {
+      var d = days[0];
+      var cols = list.map(function (s) { return { date: d, staffId: s.id, staff: s, label: s.name, exact: true }; });
+      if (state.bookings.some(function (b) { return b.date === d && !b.staffId; })) cols.push({ date: d, staffId: '', label: 'Da assegnare' });
+      return cols;
+    }
+    var staff = state.staffFilter ? state.staff.filter(function (s) { return s.id === state.staffFilter; })[0] : null;
+    return days.map(function (d) { return { date: d, staffId: state.staffFilter || undefined, staff: staff }; });
+  }
+
+  /** Fasce di lavoro di una colonna: quelle del collaboratore se ha orari propri. */
+  function columnHours(col) {
+    var wd = parseISO(col.date).getDay();
+    if (col.staff && col.staff.customHours) return col.staff.openingHours[wd] || [];
+    return state.settings.openingHours[wd] || [];
+  }
+
+  function inColumn(item, col) {
+    if (item.date !== col.date) return false;
+    if (col.staffId === undefined) return true;
+    if (col.staffId === '') return !item.staffId;
+    // Con il filtro su un collaboratore si vedono anche i non assegnati (occupano tutti)
+    return item.staffId === col.staffId || (!col.exact && !item.staffId);
+  }
+
   function renderCalendar(days) {
     var cal = $('calendar');
     var range = visibleHours(days);
     var height = (range.end - range.start) * PX_PER_MIN;
     var t = today();
+    var columns = calendarColumns(days);
+    var byStaff = columns.length && columns[0].label !== undefined;
+    var showStaffName = staffMode() && !state.staffFilter && !byStaff;
 
     cal.innerHTML = '';
-    cal.style.setProperty('--days', days.length);
-    cal.style.setProperty('--col-min', state.view === 'day' ? '220px' : '96px');
+    cal.style.setProperty('--days', columns.length);
+    cal.style.setProperty('--col-min', state.view === 'day' ? (byStaff ? '150px' : '220px') : '96px');
 
     // Intestazioni
     cal.appendChild(el('div', { class: 'cal-head corner' }));
-    days.forEach(function (d) {
-      cal.appendChild(el('div', { class: 'cal-head' + (d === t ? ' today' : '') }, [
-        formatDate(d, { weekday: 'short' }),
-        el('b', { text: String(parseISO(d).getDate()) }),
-      ]));
+    columns.forEach(function (c) {
+      cal.appendChild(el('div', { class: 'cal-head' + (c.date === t && !byStaff ? ' today' : '') + (byStaff ? ' staff-head' : '') }, byStaff
+        ? [el('b', { text: c.label })]
+        : [formatDate(c.date, { weekday: 'short' }), el('b', { text: String(parseISO(c.date).getDate()) })]));
     });
 
     // Colonna delle ore
@@ -220,35 +334,44 @@
     }
     cal.appendChild(gutter);
 
-    // Colonne dei giorni
-    days.forEach(function (d) {
+    // Colonne (giorni o collaboratori)
+    columns.forEach(function (c) {
+      var d = c.date;
       var col = el('div', { class: 'cal-col', style: 'height:' + height + 'px' });
       var y = function (min) { return (min - range.start) * PX_PER_MIN; };
 
       // Fasce di apertura (sfondo bianco), il resto appare grigio = chiuso
-      (state.settings.openingHours[parseISO(d).getDay()] || []).forEach(function (i) {
+      columnHours(c).forEach(function (i) {
         col.appendChild(el('div', { class: 'cal-open', style: 'top:' + y(toMin(i.start)) + 'px;height:' + (toMin(i.end) - toMin(i.start)) * PX_PER_MIN + 'px;background-position:0 ' + -y(toMin(i.start)) + 'px' }));
       });
 
-      // Blocchi
-      state.blocks.filter(function (b) { return b.date === d; }).forEach(function (b) {
+      // Blocchi: quelli del negozio ovunque, quelli di un collaboratore nella sua colonna
+      state.blocks.filter(function (b) {
+        if (b.date !== d) return false;
+        if (!b.staffId) return true;
+        return c.staffId === undefined ? !state.staffFilter || b.staffId === state.staffFilter : b.staffId === c.staffId;
+      }).forEach(function (b) {
         var s = Math.max(toMin(b.start), range.start);
         var e = b.allDay ? range.end : Math.min(b.end === '24:00' ? 1440 : toMin(b.end), range.end);
-        col.appendChild(el('div', { class: 'cal-block', style: 'top:' + y(s) + 'px;height:' + (e - s) * PX_PER_MIN + 'px', text: b.reason || 'Bloccato' }));
+        var who = b.staffId && (showStaffName || c.staffId === undefined) ? staffName(b.staffId) + ': ' : '';
+        col.appendChild(el('div', { class: 'cal-block' + (b.staffId ? ' staff' : ''), style: 'top:' + y(s) + 'px;height:' + (e - s) * PX_PER_MIN + 'px', text: who + (b.reason || 'Bloccato') }));
       });
 
-      // Prenotazioni
-      state.bookings.filter(function (b) { return b.date === d; }).forEach(function (b) {
-        var s = toMin(b.start);
-        var e = toMin(b.end);
-        var btn = el('button', {
+      // Prenotazioni, affiancate se si sovrappongono (agende diverse nella stessa colonna)
+      var items = state.bookings.filter(function (b) { return inColumn(b, c); })
+        .map(function (b) { return { b: b, s: toMin(b.start), e: toMin(b.end) }; });
+      layoutLanes(items).forEach(function (it) {
+        var b = it.b;
+        var w = 'calc((100% - 8px) / ' + it.lanes + ' - 2px)';
+        var left = 'calc(4px + (100% - 8px) * ' + it.lane + ' / ' + it.lanes + ')';
+        var label = showStaffName ? (b.staffName || 'Da assegnare') + ' · ' + b.serviceName : b.serviceName;
+        col.appendChild(el('button', {
           type: 'button',
-          class: 'cal-event' + (b.source === 'admin' ? ' admin' : ''),
-          style: 'top:' + y(s) + 'px;height:' + Math.max((e - s) * PX_PER_MIN - 2, 18) + 'px',
-          title: b.start + '–' + b.end + ' ' + b.customer.name + ' (' + b.serviceName + ') ' + b.customer.phone,
+          class: 'cal-event' + (b.source === 'admin' ? ' admin' : '') + (staffMode() && !b.staffId ? ' unassigned' : ''),
+          style: 'top:' + y(it.s) + 'px;height:' + Math.max((it.e - it.s) * PX_PER_MIN - 2, 18) + 'px;left:' + left + ';width:' + w + ';right:auto',
+          title: b.start + '–' + b.end + ' ' + b.customer.name + ' (' + b.serviceName + (b.staffName ? ', ' + b.staffName : '') + ') ' + b.customer.phone,
           onclick: function (ev) { ev.stopPropagation(); openBookingDialog(b); },
-        }, [el('strong', { text: b.start + ' ' + b.customer.name }), b.serviceName]);
-        col.appendChild(btn);
+        }, [el('strong', { text: b.start + ' ' + b.customer.name }), label]));
       });
 
       // Linea dell'ora attuale
@@ -258,12 +381,12 @@
         if (nowMin >= range.start && nowMin <= range.end) col.appendChild(el('div', { class: 'cal-now', style: 'top:' + y(nowMin) + 'px' }));
       }
 
-      // Click su uno spazio vuoto → nuova prenotazione a quell'ora
+      // Click su uno spazio vuoto → nuova prenotazione a quell'ora (e con quel collaboratore)
       col.addEventListener('click', function (ev) {
         var rect = col.getBoundingClientRect();
         var step = state.settings.slotStepMinutes || 15;
         var minutes = range.start + Math.floor((ev.clientY - rect.top) / PX_PER_MIN / step) * step;
-        openBookingDialog(null, { date: d, time: fromMin(Math.max(range.start, Math.min(minutes, range.end - step))) });
+        openBookingDialog(null, { date: d, time: fromMin(Math.max(range.start, Math.min(minutes, range.end - step))), staffId: c.staffId || '' });
       });
 
       cal.appendChild(col);
@@ -275,9 +398,11 @@
     var t = today();
     var fmt = new Intl.NumberFormat(LOCALE, { style: 'currency', currency: CURRENCY, maximumFractionDigits: 0 });
     var sum = function (list) { return list.reduce(function (acc, b) { return acc + (b.price || 0); }, 0); };
+    // Con il filtro su un collaboratore si contano solo i suoi appuntamenti
+    var mine = state.staffFilter ? state.bookings.filter(function (b) { return b.staffId === state.staffFilter; }) : state.bookings;
     var period = state.view === 'month'
-      ? state.bookings.filter(function (b) { return sameMonth(b.date, state.anchor); })
-      : state.bookings;
+      ? mine.filter(function (b) { return sameMonth(b.date, state.anchor); })
+      : mine;
     var online = period.filter(function (b) { return b.source === 'online'; }).length;
     var stats = [];
     if (days.indexOf(t) >= 0) {
@@ -311,8 +436,8 @@
   /* ------------------------------ Vista mese ------------------------------ */
 
   function isClosed(date) { return !(state.settings.openingHours[parseISO(date).getDay()] || []).length; }
-  function bookingsOf(date) { return state.bookings.filter(function (b) { return b.date === date; }); }
-  function blocksOf(date) { return state.blocks.filter(function (b) { return b.date === date; }); }
+  function bookingsOf(date) { return filteredBookings().filter(function (b) { return b.date === date; }); }
+  function blocksOf(date) { return filteredBlocks().filter(function (b) { return b.date === date; }); }
 
   function renderMonth(days) {
     var t = today();
@@ -409,7 +534,7 @@
           el('span', { class: 'agenda-time' }, [el('b', { text: b.start }), el('small', { text: b.end })]),
           el('span', { class: 'agenda-body' }, [
             el('strong', { text: b.customer.name }),
-            el('span', { text: b.serviceName + ' · ' + fmt.format(b.price || 0) }),
+            el('span', { text: b.serviceName + ' · ' + fmt.format(b.price || 0) + (staffMode() ? ' · ' + (b.staffName || 'da assegnare') : '') }),
             b.notes ? el('em', { text: b.notes }) : null,
           ]),
         ]),
@@ -434,6 +559,22 @@
     }
   }
 
+  /** Scelta del collaboratore nella modale (solo nei negozi che ne hanno). */
+  function fillStaffSelect(select, booking, defaults) {
+    select.innerHTML = '';
+    var list = activeStaff().slice();
+    // Collaboratore disattivato ma ancora assegnato a questa prenotazione
+    if (booking && booking.staffId && !list.some(function (s) { return s.id === booking.staffId; })) {
+      list.push({ id: booking.staffId, name: (booking.staffName || staffName(booking.staffId)) + ' (disattivato)' });
+    }
+    if (booking && !booking.staffId) select.appendChild(el('option', { value: '', text: '— da assegnare —' }));
+    list.forEach(function (s) { select.appendChild(el('option', { value: s.id, text: s.name })); });
+    var wanted = booking ? (booking.staffId || '') : ((defaults && defaults.staffId) || state.staffFilter || (list[0] && list[0].id) || '');
+    select.value = wanted;
+    if (select.value !== wanted && list[0]) select.value = list[0].id;
+    $('booking-staff-field').hidden = !list.length;
+  }
+
   function openBookingDialog(booking, defaults) {
     var form = $('booking-form');
     var f = form.elements;
@@ -441,6 +582,7 @@
     form.reset();
     $('booking-error').hidden = true;
     fillServiceSelect(f.serviceId, booking);
+    fillStaffSelect(f.staffId, booking, defaults);
 
     if (booking) {
       $('booking-dialog-title').textContent = 'Modifica prenotazione';
@@ -475,6 +617,7 @@
       customer: { name: f.name.value, phone: f.phone.value, email: f.email.value },
       notes: f.notes.value,
     };
+    if (!$('booking-staff-field').hidden) body.staffId = f.staffId.value;
     var editing = state.editing;
     var req = editing
       ? api('/bookings/' + editing.id, { method: 'PUT', body: body })
@@ -507,9 +650,20 @@
 
   function loadBlocks() {
     var from = today();
-    return api('/blocks?from=' + from + '&to=' + addDays(from, 365))
-      .then(renderBlocks)
+    return Promise.all([api('/blocks?from=' + from + '&to=' + addDays(from, 365)), loadStaff()])
+      .then(function (res) { fillBlockStaff(); renderBlocks(res[0]); })
       .catch(function (err) { toast(err.message, true); });
+  }
+
+  /** "Per chi": tutto il negozio o un collaboratore (es. le sue ferie). */
+  function fillBlockStaff() {
+    var select = $('block-form').elements.staffId;
+    var current = select.value;
+    select.innerHTML = '';
+    select.appendChild(el('option', { value: '', text: 'Tutto il negozio' }));
+    activeStaff().forEach(function (s) { select.appendChild(el('option', { value: s.id, text: s.name })); });
+    select.value = current;
+    $('block-staff-field').hidden = !staffMode();
   }
 
   function renderBlocks(blocks) {
@@ -520,7 +674,7 @@
       ul.appendChild(el('li', {}, [
         el('div', {}, [
           el('strong', { text: formatDate(b.date, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }) }),
-          ' · ' + (b.allDay ? 'Tutto il giorno' : b.start + '–' + b.end) + (b.reason ? ' · ' + b.reason : ''),
+          ' · ' + (b.allDay ? 'Tutto il giorno' : b.start + '–' + b.end) + (b.staffId ? ' · solo ' + staffName(b.staffId) : '') + (b.reason ? ' · ' + b.reason : ''),
         ]),
         el('button', {
           type: 'button',
@@ -546,6 +700,7 @@
       start: f.start.value,
       end: f.end.value,
       reason: f.reason.value,
+      staffId: f.staffId.value || undefined,
     };
     api('/blocks', { method: 'POST', body: body })
       .then(function (res) {
@@ -629,6 +784,115 @@
     });
   }
 
+  /* =================================================================== */
+  /* Collaboratori                                                       */
+  /* =================================================================== */
+
+  function refreshStaff() { return loadStaff().then(renderStaffList); }
+
+  /** Editor degli orari propri: una riga per giorno, come quelli del negozio. */
+  function staffHoursEditor(staff) {
+    var box = el('div', { class: 'staff-hours' });
+    var base = staff.customHours ? staff.openingHours : (state.settings ? state.settings.openingHours : {});
+    WEEK_ORDER.forEach(function (day) {
+      var list = el('div', { 'data-day': day });
+      (base[day] || []).forEach(function (i) { list.appendChild(intervalRow(i)); });
+      box.appendChild(el('div', { class: 'day-row' }, [
+        el('div', { class: 'day-row-head' }, [
+          el('strong', { text: DAY_NAMES[day] }),
+          el('button', { type: 'button', class: 'btn btn-small', text: '+ fascia', onclick: function () { list.appendChild(intervalRow({ start: '09:00', end: '13:00' })); } }),
+        ]),
+        list,
+      ]));
+    });
+    return box;
+  }
+
+  function readHours(box) {
+    var out = {};
+    box.querySelectorAll('[data-day]').forEach(function (list) {
+      out[list.getAttribute('data-day')] = Array.prototype.map.call(list.querySelectorAll('.interval'), function (row) {
+        return { start: row.querySelector('[data-role=start]').value, end: row.querySelector('[data-role=end]').value };
+      });
+    });
+    return out;
+  }
+
+  function renderStaffList() {
+    var box = $('staff-list');
+    box.innerHTML = '';
+    if (!state.staff.length) {
+      box.appendChild(el('p', { class: 'muted small', text: 'Nessun collaboratore: il negozio ha un\'agenda unica.' }));
+      return;
+    }
+    state.staff.forEach(function (s) {
+      var name = el('input', { value: s.name, maxlength: 60 });
+      var active = el('input', { type: 'checkbox' });
+      active.checked = s.active;
+      var checks = state.services.map(function (svc) {
+        var cb = el('input', { type: 'checkbox', value: svc.id });
+        cb.checked = s.serviceIds.indexOf(svc.id) >= 0;
+        return el('label', { class: 'checkbox' }, [cb, svc.name]);
+      });
+      var custom = el('input', { type: 'checkbox' });
+      custom.checked = s.customHours;
+      var hours = staffHoursEditor(s);
+      hours.hidden = !s.customHours;
+      custom.addEventListener('change', function () { hours.hidden = !custom.checked; });
+
+      var save = function () {
+        var serviceIds = checks.map(function (l) { return l.querySelector('input'); })
+          .filter(function (cb) { return cb.checked; }).map(function (cb) { return cb.value; });
+        var body = { name: name.value, active: active.checked, serviceIds: serviceIds, customHours: custom.checked };
+        if (custom.checked) body.openingHours = readHours(hours);
+        api('/staff/' + s.id, { method: 'PUT', body: body })
+          .then(function () { toast('Collaboratore salvato'); return refreshStaff(); })
+          .catch(function (err) { toast(err.message, true); });
+      };
+      var remove = function () {
+        if (!confirm('Eliminare ' + s.name + '? Se ha appuntamenti in programma conviene disattivarlo.')) return;
+        api('/staff/' + s.id, { method: 'DELETE' })
+          .then(function () { toast('Collaboratore eliminato'); return refreshStaff(); })
+          .catch(function (err) { toast(err.message, true); });
+      };
+
+      var what = s.serviceIds.length ? s.serviceIds.length + ' servizi' : 'tutti i servizi';
+      box.appendChild(el('details', { class: 'service-card' + (s.active ? '' : ' inactive') }, [
+        el('summary', {}, [
+          el('span', { class: 'sc-main' }, [
+            el('strong', { text: s.name }),
+            el('span', { class: 'muted small', text: (s.active ? what : 'disattivato') + (s.customHours ? ' · orari propri' : '') }),
+          ]),
+          el('span', { class: 'sc-chevron', 'aria-hidden': 'true', text: '›' }),
+        ]),
+        el('div', { class: 'sc-body' }, [
+          el('label', { class: 'field' }, [el('span', { text: 'Nome' }), name]),
+          el('div', { class: 'staff-services' }, [
+            el('strong', { text: 'Servizi che fa' }),
+            el('p', { class: 'muted small', text: 'Nessuna spunta = tutti i servizi.' }),
+            el('div', { class: 'check-grid' }, checks),
+          ]),
+          el('label', { class: 'checkbox' }, [custom, 'Orari diversi da quelli del negozio (es. part-time)']),
+          hours,
+          el('div', { class: 'sc-actions' }, [
+            el('label', { class: 'checkbox' }, [active, 'Attivo']),
+            el('span', { class: 'spacer' }),
+            el('button', { type: 'button', class: 'btn btn-danger btn-small', text: 'Elimina', onclick: remove }),
+            el('button', { type: 'button', class: 'btn btn-primary btn-small', text: 'Salva', onclick: save }),
+          ]),
+        ]),
+      ]));
+    });
+  }
+
+  function addStaff(e) {
+    e.preventDefault();
+    var f = e.target.elements;
+    api('/staff', { method: 'POST', body: { name: f.name.value } })
+      .then(function () { e.target.reset(); toast('Collaboratore aggiunto'); return refreshStaff(); })
+      .catch(function (err) { toast(err.message, true); });
+  }
+
   function addService(e) {
     e.preventDefault();
     var f = e.target.elements;
@@ -678,6 +942,8 @@
     f.slotStepMinutes.value = s.slotStepMinutes;
     f.minNoticeMinutes.value = s.minNoticeMinutes;
     f.maxDaysAhead.value = s.maxDaysAhead;
+    f.cancelNoticeHours.value = Math.round((s.cancelNoticeMinutes || 0) / 60);
+    f.reminderHours.value = s.reminderHours;
   }
 
   function saveHours(e) {
@@ -696,6 +962,8 @@
         slotStepMinutes: Number(f.slotStepMinutes.value),
         minNoticeMinutes: Number(f.minNoticeMinutes.value),
         maxDaysAhead: Number(f.maxDaysAhead.value),
+        cancelNoticeMinutes: Number(f.cancelNoticeHours.value) * 60,
+        reminderHours: Number(f.reminderHours.value),
       },
     })
       .then(function (s) { state.settings = s; renderHours(); toast('Orari salvati'); })
@@ -799,6 +1067,8 @@
 
     var f = $('shop-form').elements;
     ['name', 'tagline', 'description', 'address', 'phone', 'email', 'instagram'].forEach(function (k) { f[k].value = b[k] || ''; });
+    f.notifyEmail.value = b.notifyEmail || '';
+    $('notify-warning').hidden = Boolean(state.me.features && state.me.features.email);
     f.primaryColor.value = b.primaryColor || '#1c1917';
     f.accentColor.value = b.accentColor || '#b08a4e';
     f.aboutTitle.value = b.site.aboutTitle || '';
@@ -820,6 +1090,7 @@
     var body = {
       name: f.name.value, tagline: f.tagline.value, description: f.description.value,
       address: f.address.value, phone: f.phone.value, email: f.email.value, instagram: f.instagram.value,
+      notifyEmail: f.notifyEmail.value,
       primaryColor: f.primaryColor.value, accentColor: f.accentColor.value,
       logo: draft.images.logo || '',
       site: {
@@ -835,8 +1106,22 @@
       .finally(function () { btn.disabled = false; });
   }
 
+  function changePassword(e) {
+    e.preventDefault();
+    var f = e.target.elements;
+    if (f.password.value.length < 8) return toast('La nuova password deve avere almeno 8 caratteri', true);
+    if (f.password.value !== f.repeat.value) return toast('Le due password nuove non coincidono', true);
+    var btn = e.target.querySelector('[type=submit]');
+    btn.disabled = true;
+    return api('/password', { method: 'PUT', body: { current: f.current.value, password: f.password.value } })
+      .then(function () { e.target.reset(); toast('Password cambiata'); })
+      .catch(function (err) { toast(err.message, true); })
+      .finally(function () { btn.disabled = false; });
+  }
+
   function initShopForm() {
     $('shop-form').addEventListener('submit', saveShop);
+    $('password-form').addEventListener('submit', changePassword);
     document.querySelectorAll('[data-copy]').forEach(function (b) {
       b.addEventListener('click', function () { copyText(b.getAttribute('data-copy'), b); });
     });
@@ -990,6 +1275,7 @@
     });
 
     $('service-form').addEventListener('submit', addService);
+    $('staff-form').addEventListener('submit', addStaff);
     $('hours-form').addEventListener('submit', saveHours);
 
     $('logout').addEventListener('click', function () {

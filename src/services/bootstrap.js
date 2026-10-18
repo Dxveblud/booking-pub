@@ -8,6 +8,7 @@ const { Business, Service, AdminUser } = require('../models');
 const config = require('../config');
 const { getSettings } = require('./settingsService');
 const { ensurePlatformAdmin } = require('./adminService');
+const { migrateLocks } = require('./slotLocks');
 
 /** Il negozio predefinito, creato da config.json al primo avvio. */
 async function ensureDefaultBusiness() {
@@ -39,6 +40,8 @@ async function seedDefaultServices(businessId = config.business.id, services = c
 async function bootstrap() {
   // Indici: lo username ora è unico su tutta la piattaforma (vedi AdminUser)
   await AdminUser.syncIndexes().catch((err) => console.warn('[bootstrap] Indici admin:', err.message));
+  // Lucchetti degli orari: un'agenda per collaboratore (vedi SlotLock)
+  await migrateLocks();
   await ensureDefaultBusiness();
   await getSettings(config.business.id); // crea il documento se manca
   const seeded = await seedDefaultServices();

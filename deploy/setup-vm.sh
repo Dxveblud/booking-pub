@@ -80,6 +80,7 @@ ADMIN_USERNAME=admin
 ADMIN_PASSWORD=$PASSWORD_NUOVA
 WIDGET_ALLOWED_ORIGINS=*
 BOOKING_RATE_LIMIT=10
+PUBLIC_URL=https://$DOMINIO
 ENV
     chmod 600 .env
 else
@@ -186,6 +187,40 @@ UNIT
 sudo systemctl daemon-reload
 sudo systemctl enable --now $SERVIZIO-autoupdate.timer >/dev/null 2>&1
 
+# ---------------------------------------------------------------- Backup
+echo "== Attivo il backup notturno (database e foto)..."
+chmod +x "$REPO/deploy/backup.sh"
+# Il backup gira come utente normale: gli serve solo poter lanciare mongodump nel container
+echo "$UTENTE ALL=(ALL) NOPASSWD: $(command -v docker) exec booking-mongo mongodump *"     | sudo tee /etc/sudoers.d/$SERVIZIO-backup >/dev/null
+sudo chmod 440 /etc/sudoers.d/$SERVIZIO-backup
+
+sudo tee /etc/systemd/system/$SERVIZIO-backup.service >/dev/null <<UNIT
+[Unit]
+Description=Backup di booking (database e foto)
+After=docker.service
+
+[Service]
+Type=oneshot
+User=$UTENTE
+WorkingDirectory=$REPO
+ExecStart=/usr/bin/bash $REPO/deploy/backup.sh
+UNIT
+sudo tee /etc/systemd/system/$SERVIZIO-backup.timer >/dev/null <<UNIT
+[Unit]
+Description=Backup notturno di booking
+
+[Timer]
+OnCalendar=*-*-* 03:30:00
+RandomizedDelaySec=15min
+Persistent=true
+Unit=$SERVIZIO-backup.service
+
+[Install]
+WantedBy=timers.target
+UNIT
+sudo systemctl daemon-reload
+sudo systemctl enable --now $SERVIZIO-backup.timer >/dev/null 2>&1
+
 # --------------------------------------------------------------- Verifica
 echo "== Aspetto il certificato HTTPS..."
 OK=""
@@ -214,3 +249,4 @@ fi
 echo "============================================================"
 echo "  Log app:       journalctl -u $SERVIZIO -f"
 echo "  Aggiornamenti: automatici entro 2 minuti da ogni push su main"
+echo "  Backup:        ogni notte in ~/booking-backups (prova ora: bash $REPO/deploy/backup.sh)"

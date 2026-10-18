@@ -52,6 +52,8 @@ function serializeSettings(settings) {
     slotStepMinutes: settings.slotStepMinutes,
     minNoticeMinutes: settings.minNoticeMinutes,
     maxDaysAhead: settings.maxDaysAhead,
+    cancelNoticeMinutes: settings.cancelNoticeMinutes,
+    reminderHours: settings.reminderHours,
   };
 }
 
@@ -81,7 +83,7 @@ function parseOpeningHours(input) {
 async function updateSettings(businessId, body) {
   const settings = await getSettings(businessId);
   if (body.openingHours !== undefined) settings.openingHours = parseOpeningHours(body.openingHours);
-  for (const key of ['slotStepMinutes', 'minNoticeMinutes', 'maxDaysAhead']) {
+  for (const key of ['slotStepMinutes', 'minNoticeMinutes', 'maxDaysAhead', 'cancelNoticeMinutes', 'reminderHours']) {
     if (body[key] !== undefined) {
       const n = Number(body[key]);
       if (!Number.isInteger(n)) throw badRequest(`Valore non valido per ${key}`);
@@ -92,4 +94,6 @@ async function updateSettings(businessId, body) {
   return settings;
 }
 
-module.exports = { getSettings, updateSettings, serializeSettings, serializeOpeningHours, openingHoursFromConfig };
+module.exports = {
+  getSettings, updateSettings, serializeSettings, serializeOpeningHours, openingHoursFromConfig, parseOpeningHours,
+};

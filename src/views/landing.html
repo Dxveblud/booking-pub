@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="/img/logo.svg" type="image/svg+xml">
+  <title>{{name}} · Prenotazioni online per la tua attività</title>
+  <meta name="description" content="Prenotazioni online per barbieri, parrucchieri, estetiste e centri benessere: i clienti prenotano da soli gli orari liberi, tu gestisci tutto dal telefono.">
+  <meta name="theme-color" content="#1c1917">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="{{name}} · Prenotazioni online per la tua attività">
+  <meta property="og:description" content="I clienti prenotano da soli, a qualunque ora. Tu gestisci calendario, servizi e orari dal telefono.">
+  <meta property="og:image" content="/img/demo/hero.jpg">
+  <link rel="preload" href="/fonts/playfair-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/css/fonts.css">
+  <link rel="stylesheet" href="/css/landing.css">
+  <!-- Il widget vero, sul negozio dimostrativo: "Prova a prenotare" lo apre -->
+  <script src="/widget/widget.js" data-shop="{{demoShop}}" data-mode="none" defer></script>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="#top"><img src="/img/logo.svg" alt="" width="34" height="34"><span>{{name}}</span></a>
+      <nav class="nav-links" aria-label="Sezioni">
+        <a href="#come-funziona">Come funziona</a>
+        <a href="#funzioni">Funzioni</a>
+        <a href="#domande">Domande</a>
+      </nav>
+      <div class="nav-actions">
+        <a class="btn btn-line btn-sm" href="/admin/login">Accedi</a>
+        <a class="btn btn-accent btn-sm nav-demo" href="/s/{{demoShop}}">Demo</a>
+      </div>
+    </div>
+  </header>
+
+  <main id="top">
+    <!-- HERO -->
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div class="hero-copy">
+          <p class="eyebrow">Barbieri · parrucchieri · estetiste · centri benessere</p>
+          <h1>Le prenotazioni della tua attività, online e senza telefonate.</h1>
+          <p class="lead">I clienti scelgono servizio, giorno e orario tra quelli davvero liberi, a qualunque ora. Tu vedi tutto nel calendario, dal telefono.</p>
+          <div class="hero-actions">
+            <button type="button" class="btn btn-accent btn-lg" data-booking-open>Prova a prenotare</button>
+            <a class="btn btn-ghost btn-lg" href="/s/{{demoShop}}">Guarda il sito demo</a>
+          </div>
+          <p class="hero-note">La demo è un negozio di prova: puoi prenotare davvero, non arriva niente a nessuno.</p>
+        </div>
+
+        <!-- Anteprima del widget (solo grafica) -->
+        <div class="phone" aria-hidden="true">
+          <div class="phone-screen">
+            <div class="ph-head"><span class="ph-logo">N</span><div><b>Barberia Novecento</b><small>Scegli l'orario</small></div></div>
+            <div class="ph-steps"><i class="on"></i><i class="on"></i><i class="on"></i><i></i></div>
+            <div class="ph-chips"><span>Taglio + barba</span><span>mar 20 ott</span></div>
+            <p class="ph-label">Mattina</p>
+            <div class="ph-slots"><span>09:00</span><span class="off">09:15</span><span>09:30</span><span class="sel">09:45</span><span class="off">10:00</span><span>10:15</span><span>10:30</span><span class="off">10:45</span></div>
+            <p class="ph-label">Pomeriggio</p>
+            <div class="ph-slots"><span>14:30</span><span>14:45</span><span class="off">15:00</span><span>15:15</span><span>15:30</span><span>15:45</span></div>
+            <div class="ph-cta">Continua</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PUNTI DI FORZA -->
+    <section class="strip">
+      <ul class="wrap strip-list">
+        <li><strong>Aperto 24 ore su 24</strong><span>Si prenota anche la sera e la domenica, mentre sei chiuso.</span></li>
+        <li><strong>Mai due clienti alla stessa ora</strong><span>Gli orari presi spariscono subito, anche se due persone prenotano insieme.</span></li>
+        <li><strong>Niente app da installare</strong><span>Funziona dal browser, per te e per i tuoi clienti.</span></li>
+      </ul>
+    </section>
+
+    <!-- TRE MODI -->
+    <section class="section" id="come-funziona">
+      <div class="wrap">
+        <div class="head">
+          <p class="eyebrow eyebrow-dark">Come funziona</p>
+          <h2>Hai già un sito? Bene. Non ce l'hai? Va bene lo stesso.</h2>
+        </div>
+        <div class="ways">
+          <article class="way">
+            <span class="way-num">01</span>
+            <h3>Il pulsante "Prenota" sul tuo sito</h3>
+            <p>Una riga di codice da incollare in WordPress, Wix o qualunque sito: compare il pulsante e la prenotazione si apre sopra la pagina.</p>
+            <code class="snippet">&lt;script src=".../widget/widget.js" data-shop="il-tuo-negozio" defer&gt;&lt;/script&gt;</code>
+          </article>
+          <article class="way">
+            <span class="way-num">02</span>
+            <h3>Una pagina pronta, tutta tua</h3>
+            <p>Per chi non ha un sito: listino, foto, orari, mappa e prenotazione, con il tuo nome, logo e colori. Un link da mettere su Instagram, Google e WhatsApp.</p>
+            <a class="link" href="/s/{{demoShop}}">Guarda un esempio →</a>
+          </article>
+          <article class="way">
+            <span class="way-num">03</span>
+            <h3>Il pannello per gestire tutto</h3>
+            <p>Calendario del giorno, della settimana e del mese. Aggiungi chi chiama o passa in negozio, sposta o cancella un appuntamento, chiudi per ferie.</p>
+            <a class="link" href="/admin/login">Accedi al pannello →</a>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- FUNZIONI -->
+    <section class="section section-cream" id="funzioni">
+      <div class="wrap">
+        <div class="head">
+          <p class="eyebrow eyebrow-dark">Funzioni</p>
+          <h2>Quello che serve, senza complicazioni.</h2>
+        </div>
+        <ul class="features">
+          <li><h3>Solo orari veri</h3><p>Il cliente vede solo gli orari in cui c'è davvero posto, in base a durata del servizio, aperture e appuntamenti già presi.</p></li>
+          <li><h3>Ferie e pause</h3><p>Blocca un giorno intero, una fascia oraria o più giorni di fila: nessuno potrà prenotare lì.</p></li>
+          <li><h3>Servizi, prezzi e orari</h3><p>Durata e prezzo di ogni servizio, più fasce di apertura al giorno, preavviso minimo e giorni prenotabili in anticipo.</p></li>
+          <li><h3>Avviso a ogni prenotazione</h3><p>Ricevi un'email appena un cliente prenota online o disdice, con servizio, orario e numero di telefono.</p></li>
+          <li><h3>Meno appuntamenti saltati</h3><p>Chi lascia l'email riceve la conferma, un promemoria il giorno prima e un link per disdire: il posto si libera da solo.</p></li>
+          <li><h3>Con il tuo stile</h3><p>Logo, colori, foto e testi della tua attività, modificabili quando vuoi dal pannello.</p></li>
+          <li><h3>Pensato per il telefono</h3><p>Il pannello si usa con una mano, tra un cliente e l'altro. Funziona anche da tablet e computer.</p></li>
+          <li><h3>Dati al sicuro</h3><p>Connessione protetta, password cifrate, informativa privacy pronta e dati dei clienti cancellati da soli dopo {{retentionMonths}} mesi.</p></li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- COME SI INIZIA -->
+    <section class="section">
+      <div class="wrap">
+        <div class="head">
+          <p class="eyebrow eyebrow-dark">Per iniziare</p>
+          <h2>Pronto in un giorno.</h2>
+        </div>
+        <ol class="steps">
+          <li><strong>Ci sentiamo</strong><span>Mi dici servizi, prezzi e orari della tua attività.</span></li>
+          <li><strong>Ti preparo tutto</strong><span>Creo il tuo negozio con logo e colori e ti mando le credenziali del pannello.</span></li>
+          <li><strong>I clienti prenotano</strong><span>Metti il link su Instagram e Google, o il pulsante sul tuo sito. Fatto.</span></li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- DOMANDE -->
+    <section class="section section-cream" id="domande">
+      <div class="wrap faq-wrap">
+        <div class="head">
+          <p class="eyebrow eyebrow-dark">Domande</p>
+          <h2>Domande frequenti</h2>
+        </div>
+        <div class="faq">
+          <details><summary>I miei clienti devono registrarsi o scaricare un'app?</summary><p>No. Scelgono servizio, giorno e orario e lasciano nome e numero di telefono. Ci vuole meno di un minuto.</p></details>
+          <details><summary>Devo per forza avere un sito?</summary><p>No: ricevi una pagina pronta con il tuo nome, i servizi, gli orari e la prenotazione. Se il sito ce l'hai, aggiungi solo il pulsante.</p></details>
+          <details><summary>I clienti pagano online?</summary><p>No, la prenotazione è gratuita e si paga in negozio come sempre.</p></details>
+          <details><summary>Posso continuare a prendere appuntamenti al telefono?</summary><p>Certo: li inserisci nel pannello con due tocchi e quell'orario sparisce da quelli prenotabili online.</p></details>
+          <details><summary>E se due clienti prenotano lo stesso orario nello stesso momento?</summary><p>Passa solo il primo. L'altro viene avvisato subito e gli vengono mostrati gli orari ancora liberi.</p></details>
+          <details><summary>E se un cliente non può più venire?</summary><p>Se ha lasciato l'email riceve un link per disdire da solo, fino al preavviso che decidi tu: l'orario torna libero e ti arriva un avviso.</p></details>
+          <details><summary>Chi vede i dati dei miei clienti?</summary><p>Solo tu, dal tuo pannello. Servono soltanto a gestire l'appuntamento, e il modulo di prenotazione ha già l'informativa privacy con i dati della tua attività.</p></details>
+        </div>
+      </div>
+    </section>
+
+    <!-- CONTATTI -->
+    <section class="cta" id="contatti">
+      <div class="wrap cta-inner">
+        <h2>Vuoi provarlo nella tua attività?</h2>
+        <p>Scrivimi: ti preparo una prova con i tuoi servizi e i tuoi orari.</p>
+        <div class="cta-actions">
+          <!--if:email--><a class="btn btn-accent btn-lg" href="mailto:{{email}}?subject=Prenotazioni%20online">Scrivimi una email</a><!--/if:email-->
+          <!--if:tel--><a class="btn btn-ghost btn-lg" href="tel:{{tel}}">Chiama {{phone}}</a><!--/if:tel-->
+          <button type="button" class="btn btn-ghost btn-lg" data-booking-open>Prova la demo</button>
+        </div>
+        <p class="cta-login">Hai già un account? <a href="/admin/login">Accedi al pannello</a></p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="wrap footer-inner">
+      <span class="brand brand-footer"><img src="/img/logo.svg" alt="" width="28" height="28"><span>{{name}}</span></span>
+      <span>© {{year}} {{name}}<!--if:email--> · <a href="mailto:{{email}}">{{email}}</a><!--/if:email--> · <a href="/privacy">Privacy</a></span>
+    </div>
+  </footer>
+</body>
+</html>

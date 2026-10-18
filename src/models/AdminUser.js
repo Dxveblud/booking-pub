@@ -16,6 +16,11 @@ const adminUserSchema = new mongoose.Schema(
     role: { type: String, enum: ['owner', 'super'], default: 'owner' },
     username: { type: String, required: true, trim: true, lowercase: true },
     passwordHash: { type: String, required: true },
+    // Le sessioni aperte prima di questa data non valgono più (cambio/reset password)
+    passwordChangedAt: { type: Date },
+    // Recupero password: hash del codice mandato per email e scadenza
+    resetTokenHash: { type: String },
+    resetExpires: { type: Date },
   },
   { timestamps: true }
 );
@@ -25,6 +30,9 @@ adminUserSchema.index({ username: 1 }, { unique: true });
 
 adminUserSchema.methods.setPassword = async function setPassword(plain) {
   this.passwordHash = await bcrypt.hash(plain, BCRYPT_ROUNDS);
+  this.passwordChangedAt = new Date();
+  this.resetTokenHash = undefined;
+  this.resetExpires = undefined;
 };
 
 adminUserSchema.methods.checkPassword = function checkPassword(plain) {

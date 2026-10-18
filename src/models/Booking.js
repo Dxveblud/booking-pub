@@ -15,6 +15,9 @@ const bookingSchema = new mongoose.Schema(
     businessId: { type: String, required: true },
     serviceId: { type: mongoose.Schema.Types.ObjectId, ref: 'Service' },
     serviceName: { type: String, required: true },
+    // Collaboratore (solo nei negozi che li hanno); il nome è copiato per lo storico
+    staffId: { type: mongoose.Schema.Types.ObjectId, ref: 'Staff' },
+    staffName: { type: String, default: '' },
     durationMinutes: { type: Number, required: true },
     priceCents: { type: Number, default: 0 },
 
@@ -26,6 +29,8 @@ const bookingSchema = new mongoose.Schema(
       name: { type: String, required: true, trim: true, maxlength: 80 },
       phone: { type: String, required: true, trim: true, maxlength: 25 },
       email: { type: String, trim: true, lowercase: true, maxlength: 120, default: '' },
+      // Solo le cifre del numero (ultime 10): per contare le prenotazioni attive di uno stesso cliente
+      phoneKey: { type: String, default: '' },
     },
     notes: { type: String, trim: true, maxlength: 500, default: '' },
 
@@ -34,6 +39,11 @@ const bookingSchema = new mongoose.Schema(
     isDemo: { type: Boolean, default: false },
     status: { type: String, enum: BOOKING_STATUS, default: 'confirmed' },
     cancelledAt: { type: Date },
+    cancelledBy: { type: String, enum: ['customer', 'admin'] },
+    // Codice casuale del link "gestisci/disdici" mandato al cliente
+    manageToken: { type: String },
+    // Dati del cliente cancellati dopo il periodo di conservazione (privacy)
+    anonymizedAt: { type: Date },
 
     // --- Predisposizioni per integrazioni future -------------------------
     // ID dell'evento creato su sistemi esterni (es. Google Calendar).
@@ -50,6 +60,8 @@ const bookingSchema = new mongoose.Schema(
 );
 
 bookingSchema.index({ businessId: 1, date: 1, startMinutes: 1 });
+bookingSchema.index({ manageToken: 1 }, { unique: true, sparse: true });
+bookingSchema.index({ businessId: 1, 'customer.phoneKey': 1, date: 1 });
 
 module.exports = mongoose.model('Booking', bookingSchema);
 module.exports.BOOKING_STATUS = BOOKING_STATUS;

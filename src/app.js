@@ -12,9 +12,12 @@ const mongoose = require('mongoose');
 const config = require('./config');
 const publicRoutes = require('./routes/public');
 const adminRoutes = require('./routes/admin');
+const manageRoutes = require('./routes/manage');
 const requireAdmin = require('./middleware/requireAdmin');
 const requireJson = require('./middleware/requireJson');
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
+const { getBusiness } = require('./services/businessService');
+const { renderLanding, renderPrivacy } = require('./services/landing');
 
 const PUBLIC_DIR = path.join(config.ROOT, 'public');
 const SESSION_MAX_AGE = 8 * 60 * 60 * 1000; // 8 ore
@@ -84,23 +87,50 @@ function createApp() {
   );
 
   /* -------------------------------- API --------------------------------- */
+  app.use('/api/manage', requireJson, manageRoutes);
   app.use('/api', requireJson, publicRoutes);
   app.use('/admin/api', requireJson, adminRoutes);
   app.use(['/api', '/admin/api'], notFoundHandler);
 
   /* ------------------------------- Pagine -------------------------------- */
-  app.get('/health', (req, res) => res.json({ ok: true }));
+  // Per i servizi di monitoraggio: 503 se il database non risponde
+  app.get('/health', (req, res) => {
+    const dbOk = mongoose.connection.readyState === 1;
+    res.status(dbOk ? 200 : 503).json({ ok: dbOk });
+  });
 
   app.get('/admin/login', (req, res) => {
     if (req.session.adminId) return res.redirect('/admin');
     return res.sendFile(path.join(PUBLIC_DIR, 'admin', 'login.html'));
   });
+  // Link "scegli una nuova password" (la pagina di login mostra il modulo giusto)
+  app.get('/admin/reset/:token', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'admin', 'login.html')));
   app.get(['/admin', '/admin/'], requireAdmin, (req, res) => {
     res.sendFile(path.join(PUBLIC_DIR, 'admin', 'index.html'));
   });
 
-  // Pagina pubblica di ogni negozio: /s/<codice> (stesso HTML, i dati arrivano dall'API)
-  app.get('/s/:slug', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'index.html')));
+  // Pagina pubblica di ogni negozio: /s/<codice> (stesso HTML, i dati arrivano dall'API).
+  // Negozio inesistente o disattivato: stessa pagina (mostra "non disponibile") ma con 404,
+  // così i motori di ricerca non la indicizzano.
+  app.get('/s/:slug', async (req, res) => {
+    const business = await getBusiness(req.params.slug);
+    if (!business || !business.active) res.status(404);
+    res.sendFile(path.join(PUBLIC_DIR, 'index.html'));
+  });
+
+  // Link personale del cliente per vedere o disdire l'appuntamento
+  app.get('/disdici/:token', (req, res) => {
+    res.setHeader('X-Robots-Tag', 'noindex');
+    res.sendFile(path.join(PUBLIC_DIR, 'manage.html'));
+  });
+
+  // Informativa privacy: della piattaforma e di ogni negozio
+  app.get('/privacy', (req, res) => res.type('html').send(renderPrivacy(null)));
+  app.get('/s/:slug/privacy', async (req, res) => {
+    const business = await getBusiness(req.params.slug);
+    if (!business || !business.active) return res.status(404).type('html').send(renderPrivacy(null));
+    return res.type('html').send(renderPrivacy(business));
+  });
 
   // Logo e foto caricati dai negozi (nomi casuali: si possono tenere in cache a lungo)
   app.use('/uploads', express.static(config.env.uploadDir, { index: false, maxAge: '30d', immutable: true }));
@@ -118,7 +148,12 @@ function createApp() {
       else res.setHeader('Cache-Control', config.env.isProduction ? 'public, max-age=604800' : 'no-cache');
     },
   }));
-  app.get('/', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'index.html')));
+  // "/" = presentazione della piattaforma (oppure il negozio predefinito, se platform.landing è false)
+  app.get('/', (req, res) => {
+    if (!config.platform.landing) return res.sendFile(path.join(PUBLIC_DIR, 'index.html'));
+    res.setHeader('Cache-Control', 'no-cache');
+    return res.type('html').send(renderLanding());
+  });
 
   app.use(errorHandler);
   return app;

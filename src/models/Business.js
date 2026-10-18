@@ -39,6 +39,8 @@ const businessSchema = new mongoose.Schema(
       gallery: { type: [String], default: [] },
       demoNotice: { type: String, trim: true, maxlength: 300, default: '' },
     },
+    // Indirizzo che riceve un'email a ogni prenotazione online (vuoto = nessun avviso)
+    notifyEmail: { type: String, trim: true, lowercase: true, maxlength: 120, default: '' },
     active: { type: Boolean, default: true }, // se false widget e pagina mostrano "non disponibile"
     notes: { type: String, trim: true, maxlength: 1000, default: '' }, // note interne (solo super admin)
   },

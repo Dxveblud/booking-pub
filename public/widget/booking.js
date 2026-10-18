@@ -1,26 +1,32 @@
 /**
- * Flusso di prenotazione: servizio → giorno → orario → dati → riepilogo → fatto.
+ * Flusso di prenotazione: servizio → (con chi) → giorno → orario → dati → riepilogo → fatto.
+ * Il passo "con chi" compare solo se il servizio lo fanno almeno due collaboratori.
  * Gira dentro l'iframe del widget (o da solo aprendo /widget/booking.html).
  * Parametri URL: ?service=<id> per partire da un servizio già scelto.
  */
 (function () {
   'use strict';
 
-  var STEPS = ['service', 'day', 'time', 'details', 'confirm', 'done'];
+  var STEPS = ['service', 'staff', 'day', 'time', 'details', 'confirm', 'done'];
   var STEP_LABELS = {
     service: 'Scegli il servizio',
+    staff: 'Con chi?',
     day: 'Scegli il giorno',
     time: "Scegli l'orario",
     details: 'I tuoi dati',
     confirm: 'Controlla e conferma',
     done: 'Prenotazione confermata',
   };
-  var PROGRESS = { service: 0, day: 1, time: 2, details: 3, confirm: 4, done: 4 };
+  var PROGRESS = { service: 0, staff: 0, day: 1, time: 2, details: 3, confirm: 4, done: 4 };
 
   var params = new URLSearchParams(window.location.search);
   var SHOP = params.get('shop') || '';
   var isEmbedded = window.parent !== window;
-  var state = { business: null, services: [], hours: {}, service: null, date: null, time: null, customer: null, booking: null, step: 'service' };
+  var state = {
+    business: null, services: [], hours: {}, service: null, date: null, time: null, customer: null, booking: null, step: 'service',
+    staffList: [], // collaboratori che fanno il servizio scelto (il passo compare se sono almeno 2)
+    staff: null, // collaboratore scelto; null = chiunque
+  };
 
   var $ = function (id) { return document.getElementById(id); };
 
@@ -87,10 +93,13 @@
 
   function renderChosen() {
     var chips = [];
+    var withStaff = state.staffList.length > 1;
     if (state.service) chips.push(function () { return chip('', state.service.name); });
+    if (withStaff) chips.push(function () { return chip('con', state.staff ? state.staff.name : 'chiunque'); });
     if (state.date) chips.push(function () { return chip('', formatDate(state.date, { weekday: 'short', day: 'numeric', month: 'short' })); });
     if (state.time) chips.push(function () { return chip('ore', state.time); });
-    var targets = { 'bk-chosen-day': 1, 'bk-chosen-time': 2, 'bk-chosen-details': 3 };
+    var extra = withStaff ? 1 : 0;
+    var targets = { 'bk-chosen-staff': 1, 'bk-chosen-day': 1 + extra, 'bk-chosen-time': 2 + extra, 'bk-chosen-details': 3 + extra };
     Object.keys(targets).forEach(function (id) {
       var box = $(id);
       box.innerHTML = '';
@@ -124,8 +133,15 @@
 
   function back() {
     var index = STEPS.indexOf(state.step);
-    if (index > 0) goTo(STEPS[index - 1]);
+    if (index <= 0) return;
+    var prev = STEPS[index - 1];
+    // Il passo "con chi" esiste solo se c'è da scegliere
+    if (prev === 'staff' && state.staffList.length < 2) prev = 'service';
+    goTo(prev);
   }
+
+  /** ?staffId=… da aggiungere alle richieste di disponibilità (vuoto = chiunque). */
+  function staffQuery() { return state.staff ? '&staffId=' + encodeURIComponent(state.staff.id) : ''; }
 
   /* --------------------------- 1. Servizio ---------------------------- */
 
@@ -151,11 +167,44 @@
   function selectService(service) {
     state.service = service;
     state.date = state.time = null;
+    state.staff = null;
     setLoading(true);
-    return api('/availability/days?serviceId=' + encodeURIComponent(service.id))
-      .then(function (data) { renderDays(data.days); goTo('day'); })
+    return api('/staff?serviceId=' + encodeURIComponent(service.id))
+      .then(function (list) {
+        state.staffList = list;
+        if (list.length > 1) { renderStaff(); goTo('staff'); return null; }
+        return loadDays();
+      })
       .catch(function (err) { alert(err.message); })
       .finally(function () { setLoading(false); });
+  }
+
+  function loadDays() {
+    return api('/availability/days?serviceId=' + encodeURIComponent(state.service.id) + staffQuery())
+      .then(function (data) { renderDays(data.days); goTo('day'); });
+  }
+
+  /* ------------------------- 1b. Con chi? ----------------------------- */
+
+  function renderStaff() {
+    var list = $('bk-staff');
+    list.innerHTML = '';
+    var options = [{ id: '', name: 'Chiunque', hint: 'Il primo libero: più orari tra cui scegliere' }].concat(state.staffList);
+    options.forEach(function (s) {
+      var initial = s.id ? s.name.trim().charAt(0).toUpperCase() : '★';
+      var btn = el('button', { type: 'button', class: 'bk-service bk-person' + (s.id ? '' : ' any') }, [
+        el('span', { class: 'bk-avatar', 'aria-hidden': 'true', text: initial }),
+        el('span', { class: 'bk-service-name', text: s.name }),
+        s.hint ? el('span', { class: 'bk-service-desc', text: s.hint }) : null,
+      ]);
+      btn.addEventListener('click', function () {
+        state.staff = s.id ? s : null;
+        state.date = state.time = null;
+        setLoading(true);
+        loadDays().catch(function (err) { alert(err.message); }).finally(function () { setLoading(false); });
+      });
+      list.appendChild(el('li', {}, [btn]));
+    });
   }
 
   /* ---------------------------- 2. Giorno ----------------------------- */
@@ -211,7 +260,7 @@
   /* ---------------------------- 3. Orario ----------------------------- */
 
   function loadSlots() {
-    return api('/availability?serviceId=' + encodeURIComponent(state.service.id) + '&date=' + state.date).then(function (data) {
+    return api('/availability?serviceId=' + encodeURIComponent(state.service.id) + '&date=' + state.date + staffQuery()).then(function (data) {
       var box = $('bk-slots');
       box.innerHTML = '';
       $('bk-slots-empty').hidden = data.slots.length > 0;
@@ -246,10 +295,12 @@
     var f = $('bk-form').elements;
     var name = f.name.value.trim();
     var phone = f.phone.value.trim();
+    var email = f.email.value.trim();
     if (name.length < 2) { f.name.focus(); return showError('bk-form-error', 'Inserisci nome e cognome.'); }
     if (!/^\+?[0-9\s().-]{6,20}$/.test(phone)) { f.phone.focus(); return showError('bk-form-error', 'Inserisci un numero di cellulare valido.'); }
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { f.email.focus(); return showError('bk-form-error', "Controlla l'indirizzo email (oppure lascialo vuoto)."); }
     showError('bk-form-error', '');
-    state.customer = { name: name, phone: phone, notes: f.notes.value.trim() };
+    state.customer = { name: name, phone: phone, email: email, notes: f.notes.value.trim(), website: f.website.value };
     renderSummary();
     goTo('confirm');
   }
@@ -263,9 +314,13 @@
     var rows = [
       ['Quando', longDate(state.date)],
       ['Orario', state.time + ' – ' + endTime()],
+    ];
+    if (state.staffList.length > 1) rows.push(['Con', state.staff ? state.staff.name : 'Chiunque sia libero']);
+    rows = rows.concat([
       ['Nome', state.customer.name],
       ['Cellulare', state.customer.phone],
-    ];
+    ]);
+    if (state.customer.email) rows.push(['Email', state.customer.email]);
     if (state.customer.notes) rows.push(['Note', state.customer.notes]);
 
     var dl = el('dl');
@@ -293,8 +348,10 @@
         serviceId: state.service.id,
         date: state.date,
         time: state.time,
-        customer: { name: state.customer.name, phone: state.customer.phone },
+        customer: { name: state.customer.name, phone: state.customer.phone, email: state.customer.email },
         notes: state.customer.notes,
+        website: state.customer.website,
+        staffId: state.staff ? state.staff.id : undefined,
       },
     })
       .then(function (b) {
@@ -305,7 +362,12 @@
         ticket.innerHTML = '';
         ticket.appendChild(el('strong', { text: b.serviceName }));
         ticket.appendChild(el('span', { text: longDate(b.date) + ' · ' + b.start + '–' + b.end }));
+        if (b.staffName) ticket.appendChild(el('span', { text: 'Con ' + b.staffName }));
         if (state.business.address) ticket.appendChild(el('span', { text: state.business.address }));
+        $('bk-done-email').textContent = state.customer.email ? 'Ti abbiamo mandato la conferma a ' + state.customer.email + '.' : '';
+        $('bk-done-email').hidden = !state.customer.email;
+        $('bk-manage').hidden = !b.manageUrl;
+        if (b.manageUrl) $('bk-manage').href = b.manageUrl;
         goTo('done');
       })
       .catch(function (err) {
@@ -353,7 +415,9 @@
   }
 
   function restart() {
-    state.service = state.date = state.time = state.booking = null;
+    state.service = state.date = state.time = state.booking = state.staff = null;
+    state.staffList = [];
+    $('bk-manage').hidden = true;
     goTo('service');
   }
 
@@ -363,6 +427,8 @@
     $('bk-business').textContent = b.name;
     document.title = 'Prenota · ' + b.name;
     $('bk-logo').src = b.logo || monogram(b.name, b.primaryColor);
+    $('bk-privacy-link').href = '/s/' + encodeURIComponent(b.slug) + '/privacy';
+    $('bk-email-field').hidden = !(b.features && b.features.emailConfirmation);
     var root = document.documentElement.style;
     if (b.primaryColor) root.setProperty('--ink', b.primaryColor);
     if (b.accentColor) root.setProperty('--accent', b.accentColor);
@@ -371,8 +437,11 @@
   function init() {
     if (isEmbedded) {
       $('bk-close').hidden = false;
-      $('bk-close').addEventListener('click', function () {
-        window.parent.postMessage({ source: 'booking-widget', type: 'close' }, '*');
+      var closeWidget = function () { window.parent.postMessage({ source: 'booking-widget', type: 'close' }, '*'); };
+      $('bk-close').addEventListener('click', closeWidget);
+      // Con il cursore dentro il widget, Esc arriva qui e non alla pagina ospite
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') { e.preventDefault(); closeWidget(); }
       });
     }
     $('bk-back').addEventListener('click', back);

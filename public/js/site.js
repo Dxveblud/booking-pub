@@ -68,6 +68,7 @@
       $('hero-call').hidden = true;
     }
     if (b.email) { $('biz-email').textContent = b.email; $('biz-email').href = 'mailto:' + b.email; }
+    $('privacy-link').href = '/s/' + encodeURIComponent(b.slug) + '/privacy';
     $('maps-link').href = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(b.address || b.name);
 
     var root = document.documentElement.style;

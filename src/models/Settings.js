@@ -30,6 +30,10 @@ const settingsSchema = new mongoose.Schema(
     minNoticeMinutes: { type: Number, default: 60, min: 0, max: 10080 },
     // Quanti giorni in avanti si può prenotare online
     maxDaysAhead: { type: Number, default: 60, min: 1, max: 365 },
+    // Fino a quanti minuti prima dell'appuntamento il cliente può disdire dal link
+    cancelNoticeMinutes: { type: Number, default: 120, min: 0, max: 10080 },
+    // Promemoria email al cliente: quante ore prima (0 = nessun promemoria)
+    reminderHours: { type: Number, default: 24, min: 0, max: 168 },
     // Versione dei dati di esempio già caricati (solo modalità demo)
     demoSeedVersion: { type: Number, default: 0 },
   },

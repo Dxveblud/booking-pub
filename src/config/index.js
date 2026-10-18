@@ -82,11 +82,31 @@ const demo = {
   ...fileConfig.demo,
 };
 
+// La piattaforma in sé: pagina "/" che presenta il prodotto ai nuovi clienti.
+// landing: false → in "/" si apre direttamente il negozio predefinito.
+const platform = {
+  name: 'Prenotazioni online',
+  email: '',
+  phone: '',
+  demoShop: business.id,
+  landing: true,
+  ...fileConfig.platform,
+};
+
 const booking = {
   slotStepMinutes: 15,
   minNoticeMinutes: 60,
   maxDaysAhead: 60,
+  // Prenotazioni future che uno stesso numero può fare online (anti-spam)
+  maxActivePerPhone: 3,
   ...fileConfig.booking,
+};
+
+// Privacy: dopo quanti mesi dall'appuntamento si cancellano nome, telefono,
+// email e note del cliente (la prenotazione resta, anonima, per le statistiche)
+const privacy = {
+  retentionMonths: 24,
+  ...fileConfig.privacy,
 };
 
 const defaults = {
@@ -95,4 +115,4 @@ const defaults = {
   ...fileConfig.defaults,
 };
 
-module.exports = { env, business, site, booking, defaults, demo, ROOT };
+module.exports = { env, business, site, booking, defaults, demo, platform, privacy, ROOT };

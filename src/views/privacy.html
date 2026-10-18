@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="/img/logo.svg" type="image/svg+xml">
+  <title>Informativa privacy · {{title}}</title>
+  <meta name="robots" content="noindex">
+  <link rel="stylesheet" href="/css/fonts.css">
+  <link rel="stylesheet" href="/css/landing.css">
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="{{homeUrl}}"><!--if:logo--><img src="{{logo}}" alt="" width="34" height="34"><!--/if:logo--><span>{{title}}</span></a>
+    </div>
+  </header>
+
+  <main class="section">
+    <article class="wrap legal">
+      <p class="eyebrow eyebrow-dark">Privacy</p>
+      <h1>Informativa sul trattamento dei dati personali</h1>
+      <p class="muted">Ai sensi del Regolamento UE 2016/679 (GDPR). Ultimo aggiornamento: {{updated}}.</p>
+
+<!--if:shop-->
+      <h2>Chi tratta i tuoi dati</h2>
+      <p><strong>{{shopName}}</strong><!--if:shopAddress-->, {{shopAddress}}<!--/if:shopAddress--> è il <em>titolare del trattamento</em> dei dati che lasci quando prenoti un appuntamento online.
+        <!--if:shopContact-->Per qualunque richiesta puoi scrivere a <a href="mailto:{{shopEmail}}">{{shopEmail}}</a><!--if:shopPhone--> o chiamare il {{shopPhone}}<!--/if:shopPhone-->.<!--/if:shopContact-->
+        <!--if:shopPhoneOnly-->Per qualunque richiesta puoi chiamare il {{shopPhone}}.<!--/if:shopPhoneOnly--></p>
+      <p>Il sistema di prenotazione è fornito da <strong>{{platformName}}</strong>, che conserva i dati per conto del negozio come <em>responsabile del trattamento</em> (art. 28 GDPR) e non li usa per nessun altro scopo.</p>
+
+      <h2>Quali dati</h2>
+      <ul>
+        <li>nome e numero di telefono;</li>
+        <li>indirizzo email, se scegli di lasciarlo;</li>
+        <li>le eventuali note che scrivi;</li>
+        <li>servizio, giorno e orario dell'appuntamento.</li>
+      </ul>
+
+      <h2>Perché e su quale base</h2>
+      <p>Solo per gestire il tuo appuntamento: riservarti l'orario, contattarti in caso di imprevisti e, se hai lasciato l'email, mandarti la conferma, un promemoria e gli avvisi di modifica o annullamento. La base giuridica è l'esecuzione della richiesta che fai prenotando (art. 6, par. 1, lett. b GDPR). Senza nome e telefono non è possibile prenotare online; puoi sempre prenotare chiamando il negozio.</p>
+      <p>I dati non vengono usati per pubblicità, non vengono venduti né ceduti a terzi e non servono per profilarti.</p>
+
+      <h2>Chi li vede</h2>
+      <p>Il personale di {{shopName}} e, solo per assistenza tecnica, {{platformName}}. Le email vengono consegnate tramite un servizio di invio email professionale, che le tratta solo per recapitarle.</p>
+
+      <h2>Per quanto tempo</h2>
+      <p>I tuoi dati vengono cancellati automaticamente <strong>{{retentionMonths}} mesi</strong> dopo la data dell'appuntamento. Resta solo un record anonimo (servizio e orario) per le statistiche del negozio.</p>
+
+      <h2>Cookie</h2>
+      <p>Il modulo di prenotazione non usa cookie né strumenti di tracciamento.</p>
+<!--/if:shop-->
+
+<!--if:platform-->
+      <h2>Chi siamo</h2>
+      <p>Questo sito presenta <strong>{{platformName}}</strong>, un servizio di prenotazioni online per attività locali.<!--if:platformEmail--> Contatti: <a href="mailto:{{platformEmail}}">{{platformEmail}}</a>.<!--/if:platformEmail--></p>
+
+      <h2>Visitatori del sito</h2>
+      <p>Visitando queste pagine non ti chiediamo dati e non usiamo cookie di profilazione o strumenti di statistica di terze parti. I server registrano per motivi di sicurezza le normali informazioni tecniche delle richieste (indirizzo IP, data e ora), cancellate periodicamente.</p>
+
+      <h2>Prenotazioni presso i negozi</h2>
+      <p>Quando prenoti presso un negozio che usa {{platformName}}, il titolare dei tuoi dati è quel negozio: trovi la sua informativa nel modulo di prenotazione. {{platformName}} conserva quei dati per suo conto, come responsabile del trattamento.</p>
+
+      <h2>Titolari dei negozi</h2>
+      <p>Per chi usa il pannello conserviamo username, password (solo in forma cifrata), i dati del negozio e l'email per gli avvisi, per fornire il servizio richiesto (art. 6, par. 1, lett. b GDPR) per tutta la durata del rapporto. Il pannello usa un solo cookie tecnico, necessario per restare collegati, che non richiede consenso.</p>
+<!--/if:platform-->
+
+      <h2>I tuoi diritti</h2>
+      <p>Puoi chiedere in qualunque momento di accedere ai tuoi dati, correggerli, cancellarli, limitarne l'uso od opporti al trattamento, contattando i riferimenti indicati sopra. Se ritieni che i tuoi dati siano trattati in modo non corretto puoi rivolgerti al <a href="https://www.garanteprivacy.it" target="_blank" rel="noopener">Garante per la protezione dei dati personali</a>.</p>
+    </article>
+  </main>
+
+  <footer class="footer">
+    <div class="wrap footer-inner">
+      <span>{{title}}</span>
+      <a href="{{homeUrl}}">Torna al sito</a>
+    </div>
+  </footer>
+</body>
+</html>

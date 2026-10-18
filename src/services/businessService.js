@@ -54,6 +54,8 @@ function serializePublic(b) {
       aboutTitle: b.site.aboutTitle,
       highlights: b.site.highlights.map((h) => ({ title: h.title, text: h.text })),
       gallery: [...b.site.gallery],
+      team: (b.site.team || []).map((m) => ({ name: m.name, role: m.role, photo: m.photo })),
+      brands: [...(b.site.brands || [])],
       demoNotice: b.site.demoNotice,
     },
     reviews: { rating: (b.reviews && b.reviews.rating) || 0, count: (b.reviews && b.reviews.count) || 0, url: (b.reviews && b.reviews.url) || '' },
@@ -147,6 +149,15 @@ function applyEditable(doc, body) {
     if (Array.isArray(site.gallery)) {
       const gallery = site.gallery.filter((g) => typeof g === 'string' && g && isUrlOrPath(g)).slice(0, 12);
       doc.site.gallery = gallery;
+    }
+    if (Array.isArray(site.team)) {
+      doc.site.team = site.team.slice(0, 12)
+        .map((m) => ({ name: str(m && m.name, 60), role: str(m && m.role, 60), photo: str(m && m.photo, 300) }))
+        .filter((m) => m.name);
+      if (doc.site.team.some((m) => !isUrlOrPath(m.photo))) throw badRequest('Foto del team non valida');
+    }
+    if (Array.isArray(site.brands)) {
+      doc.site.brands = site.brands.map((v) => str(v, 40)).filter(Boolean).slice(0, 16);
     }
     if (Array.isArray(site.highlights)) {
       doc.site.highlights = site.highlights.slice(0, 4)

@@ -82,6 +82,18 @@ test('"/" presenta la piattaforma, /s/<codice> il negozio (404 se non esiste)', 
 
   assert.equal((await fetch(base + '/s/demo')).status, 200);
   assert.equal((await fetch(base + '/s/non-esiste')).status, 404);
+
+  // Sito del negozio a più pagine, con nome e titolo già nell'HTML
+  for (const [path, title] of [['', 'Barberia Demo · Prenota online'], ['/servizi', 'Servizi e prezzi · Barberia Demo'],
+    ['/chi-siamo', 'Chi siamo · Barberia Demo'], ['/contatti', 'Orari e contatti · Barberia Demo']]) {
+    const res = await fetch(`${base}/s/demo${path}`);
+    assert.equal(res.status, 200, path);
+    const page = await res.text();
+    assert.ok(page.includes(`<title>${title}</title>`), path);
+    assert.doesNotMatch(page, /\{\{\w+\}\}|<!--if:/, path);
+    assert.ok(page.includes('href="/s/demo/servizi"'));
+  }
+  assert.equal((await fetch(base + '/s/non-esiste/servizi')).status, 404);
   assert.equal((await fetch(base + '/robots.txt')).status, 200);
 });
 
@@ -98,6 +110,16 @@ test('il titolare imposta l\'email per gli avvisi', async () => {
   const ok = await owner('PUT', '/admin/api/business', { notifyEmail: 'Luna@Example.com' });
   assert.equal(ok.status, 200);
   assert.equal(ok.data.notifyEmail, 'luna@example.com');
+  // Team e marchi del sito
+  const site = await owner('PUT', '/admin/api/business', { site: {
+    team: [{ name: 'Luna Bianchi', role: 'Estetista', photo: '' }, { name: '', role: 'senza nome: scartato' }],
+    brands: ['Davines', '  ', 'Comfort Zone'],
+  } });
+  assert.equal(site.status, 200);
+  assert.deepEqual(site.data.site.team, [{ name: 'Luna Bianchi', role: 'Estetista', photo: '' }]);
+  assert.deepEqual(site.data.site.brands, ['Davines', 'Comfort Zone']);
+  assert.equal((await owner('PUT', '/admin/api/business', { site: { team: [{ name: 'X', photo: 'javascript:alert(1)' }] } })).status, 400);
+
   // L'indirizzo degli avvisi non è pubblico
   assert.equal((await anon('GET', '/api/business?shop=estetica-luna')).data.notifyEmail, undefined);
 });

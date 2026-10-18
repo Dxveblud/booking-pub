@@ -1022,7 +1022,7 @@
   }
 
   // Bozza delle immagini del modulo (salvate solo con "Salva modifiche")
-  var draft = { images: {}, gallery: [] };
+  var draft = { images: {}, gallery: [], team: [] };
 
   function renderImageField(box) {
     var key = box.getAttribute('data-img');
@@ -1059,6 +1059,39 @@
     }
   }
 
+  /** Righe del team: nome, ruolo, foto (bozza salvata con "Salva modifiche"). */
+  function renderTeamFields() {
+    var box = $('team-fields');
+    box.innerHTML = '';
+    if (!draft.team.length) box.appendChild(el('p', { class: 'muted small', text: 'Nessuna persona: la sezione Team non viene mostrata.' }));
+    draft.team.forEach(function (m, i) {
+      var photo = el('div', { class: 'team-photo' + (m.photo ? '' : ' empty') });
+      if (m.photo) photo.appendChild(el('img', { src: m.photo, alt: '' }));
+      else photo.appendChild(el('span', { text: 'Foto' }));
+      var file = el('input', { type: 'file', accept: 'image/png,image/jpeg,image/webp', hidden: true });
+      file.addEventListener('change', function () {
+        var f = file.files[0];
+        if (!f) return;
+        uploadImage(f)
+          .then(function (url) { m.photo = url; renderTeamFields(); toast('Foto caricata: ricordati di salvare'); })
+          .catch(function (err) { toast(err.message, true); });
+      });
+      box.appendChild(el('div', { class: 'team-row' }, [
+        photo,
+        el('div', { class: 'team-inputs' }, [
+          el('input', { value: m.name || '', maxlength: 60, placeholder: 'Nome', 'aria-label': 'Nome', oninput: function (e) { m.name = e.target.value; } }),
+          el('input', { value: m.role || '', maxlength: 60, placeholder: 'Ruolo (es. Hair stylist)', 'aria-label': 'Ruolo', oninput: function (e) { m.role = e.target.value; } }),
+          el('div', { class: 'team-actions' }, [
+            el('label', { class: 'btn btn-small' }, [m.photo ? 'Cambia foto' : 'Carica foto', file]),
+            m.photo ? el('button', { type: 'button', class: 'btn btn-small btn-ghost', text: 'Togli foto', onclick: function () { m.photo = ''; renderTeamFields(); } }) : null,
+            el('button', { type: 'button', class: 'btn btn-small btn-danger', text: 'Rimuovi', onclick: function () { draft.team.splice(i, 1); renderTeamFields(); } }),
+          ]),
+        ]),
+      ]));
+    });
+    $('team-add').hidden = draft.team.length >= 12;
+  }
+
   function renderShopPanel() {
     var b = state.me.business;
     var origin = window.location.origin;
@@ -1084,6 +1117,9 @@
     document.querySelectorAll('.img-field').forEach(renderImageField);
     renderGalleryEdit();
     renderHighlightFields(b.site.highlights || []);
+    draft.team = (b.site.team || []).map(function (m) { return { name: m.name, role: m.role, photo: m.photo }; });
+    renderTeamFields();
+    f.brands.value = (b.site.brands || []).join('\n');
   }
 
   function saveShop(e) {
@@ -1104,6 +1140,8 @@
       site: {
         heroImage: draft.images.heroImage || '', aboutImage: draft.images.aboutImage || '',
         aboutTitle: f.aboutTitle.value, highlights: highlights, gallery: draft.gallery,
+        team: draft.team.filter(function (m) { return (m.name || '').trim(); }),
+        brands: f.brands.value.split('\n').map(function (v) { return v.trim(); }).filter(Boolean),
       },
     };
     var btn = e.target.querySelector('[type=submit]');
@@ -1146,6 +1184,12 @@
           .finally(function () { box.classList.remove('loading'); });
       });
       box.querySelector('.img-remove').addEventListener('click', function () { draft.images[key] = ''; renderImageField(box); });
+    });
+    $('team-add').addEventListener('click', function () {
+      draft.team.push({ name: '', role: '', photo: '' });
+      renderTeamFields();
+      var last = $('team-fields').querySelector('.team-row:last-child input');
+      if (last) last.focus();
     });
     $('gallery-add').addEventListener('change', function (e) {
       var files = Array.prototype.slice.call(e.target.files, 0, 12 - draft.gallery.length);

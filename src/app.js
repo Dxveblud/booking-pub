@@ -17,7 +17,7 @@ const requireAdmin = require('./middleware/requireAdmin');
 const requireJson = require('./middleware/requireJson');
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
 const { getBusiness } = require('./services/businessService');
-const { renderLanding, renderPrivacy } = require('./services/landing');
+const { renderLanding, renderPrivacy, renderShopPage, SHOP_PAGES } = require('./services/landing');
 
 const PUBLIC_DIR = path.join(config.ROOT, 'public');
 const SESSION_MAX_AGE = 8 * 60 * 60 * 1000; // 8 ore
@@ -109,14 +109,18 @@ function createApp() {
     res.sendFile(path.join(PUBLIC_DIR, 'admin', 'index.html'));
   });
 
-  // Pagina pubblica di ogni negozio: /s/<codice> (stesso HTML, i dati arrivano dall'API).
-  // Negozio inesistente o disattivato: stessa pagina (mostra "non disponibile") ma con 404,
+  // Sito di ogni negozio: /s/<codice> (home), /s/<codice>/servizi, /chi-siamo, /contatti.
+  // Negozio inesistente o disattivato: la pagina dice "non disponibile" e risponde 404,
   // così i motori di ricerca non la indicizzano.
-  app.get('/s/:slug', async (req, res) => {
-    const business = await getBusiness(req.params.slug);
-    if (!business || !business.active) res.status(404);
-    res.sendFile(path.join(PUBLIC_DIR, 'index.html'));
-  });
+  const shopPage = (page) => async (req, res) => {
+    const slug = String(req.params.slug || '').toLowerCase();
+    const business = await getBusiness(slug);
+    const ok = business && business.active;
+    res.status(ok ? 200 : 404).setHeader('Cache-Control', 'no-cache');
+    res.type('html').send(renderShopPage(ok ? business : null, page, slug));
+  };
+  app.get('/s/:slug', shopPage('home'));
+  for (const page of Object.keys(SHOP_PAGES).filter((p) => p !== 'home')) app.get(`/s/:slug/${page}`, shopPage(page));
 
   // Link personale del cliente per vedere o disdire l'appuntamento
   app.get('/disdici/:token', (req, res) => {
@@ -150,8 +154,8 @@ function createApp() {
   }));
   // "/" = presentazione della piattaforma (oppure il negozio predefinito, se platform.landing è false)
   app.get('/', (req, res) => {
-    if (!config.platform.landing) return res.sendFile(path.join(PUBLIC_DIR, 'index.html'));
     res.setHeader('Cache-Control', 'no-cache');
+    if (!config.platform.landing) return res.redirect(`/s/${config.business.id}`);
     return res.type('html').send(renderLanding());
   });
 

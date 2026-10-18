@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="{{icon}}">
+  <title>{{pageTitle}}</title>
+  <meta name="description" content="{{description}}">
+  <meta name="theme-color" content="{{ink}}">
+  <meta property="og:title" content="{{pageTitle}}">
+  <meta property="og:description" content="{{description}}">
+  <link rel="preload" href="/fonts/playfair-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/css/fonts.css">
+  <link rel="stylesheet" href="/css/site.css">
+  <script src="/js/site.js" defer></script>
+  <!-- Widget di prenotazione: lo stesso che si incorpora nei siti dei clienti -->
+  <script src="/widget/widget.js" data-shop="{{slug}}" data-mode="none" defer></script>
+</head>
+<body data-page="{{page}}" data-shop="{{slug}}">
+  <div class="demo-bar" id="demo-bar" hidden></div>
+
+  <header class="nav" id="nav">
+    <div class="container nav-inner">
+      <a class="brand" href="{{base}}">
+        <img id="biz-logo" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="" width="40" height="40">
+        <span id="biz-name-header">{{name}}</span>
+      </a>
+      <nav class="nav-links" id="nav-links" aria-label="Pagine">
+        <a href="{{base}}" data-nav="home">Home</a>
+        <a href="{{base}}/servizi" data-nav="servizi">Servizi</a>
+        <a href="{{base}}/chi-siamo" data-nav="chi-siamo">Chi siamo</a>
+        <a href="{{base}}/contatti" data-nav="contatti">Contatti</a>
+      </nav>
+      <div class="nav-actions">
+        <button type="button" class="btn btn-line btn-sm" data-booking-open>Prenota</button>
+        <button type="button" class="menu-toggle" id="menu-toggle" aria-label="Apri il menu" aria-expanded="false" aria-controls="nav-links">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main id="top">
+{{content}}
+  </main>
+
+  <footer class="footer">
+    <div class="container footer-grid">
+      <div class="footer-col">
+        <div class="brand brand-footer">
+          <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="" width="34" height="34">
+          <span id="biz-footer-name">{{name}}</span>
+        </div>
+        <p class="footer-tagline" id="footer-tagline"></p>
+      </div>
+      <div class="footer-col">
+        <p class="footer-title">Dove siamo</p>
+        <p id="footer-address"></p>
+        <p><a id="footer-phone" href="tel:" hidden></a></p>
+      </div>
+      <div class="footer-col">
+        <p class="footer-title">Orari</p>
+        <p id="footer-hours"></p>
+      </div>
+    </div>
+    <div class="container footer-bottom">
+      <p class="footer-small" id="demo-footer" hidden></p>
+      <p class="footer-small">© {{year}} {{name}} · <a href="{{base}}/privacy">Informativa privacy</a></p>
+    </div>
+  </footer>
+
+  <!-- Barra fissa su mobile -->
+  <div class="mobile-cta">
+    <button type="button" class="btn btn-accent btn-block" data-booking-open>Prenota online</button>
+  </div>
+</body>
+</html>

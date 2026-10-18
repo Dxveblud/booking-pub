@@ -13,6 +13,16 @@ const highlightSchema = new mongoose.Schema(
   { _id: false }
 );
 
+// Persona del team mostrata sul sito (solo vetrina: le agende sono i collaboratori, vedi Staff)
+const memberSchema = new mongoose.Schema(
+  {
+    name: { type: String, trim: true, maxlength: 60 },
+    role: { type: String, trim: true, maxlength: 60, default: '' },
+    photo: { type: String, trim: true, default: '' },
+  },
+  { _id: false }
+);
+
 const businessSchema = new mongoose.Schema(
   {
     slug: { type: String, required: true, unique: true, lowercase: true, trim: true },
@@ -37,6 +47,8 @@ const businessSchema = new mongoose.Schema(
       aboutTitle: { type: String, trim: true, maxlength: 80, default: '' },
       highlights: { type: [highlightSchema], default: [] },
       gallery: { type: [String], default: [] },
+      team: { type: [memberSchema], default: [] }, // "Il team" (home e Chi siamo)
+      brands: { type: [String], default: [] }, // "I prodotti che usiamo"
       demoNotice: { type: String, trim: true, maxlength: 300, default: '' },
     },
     // Recensioni Google: valutazione mostrata sulla pagina (inserita dal titolare),

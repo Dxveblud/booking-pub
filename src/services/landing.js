@@ -53,6 +53,34 @@ function renderLanding() {
   });
 }
 
+/* --------------------------- Sito del negozio --------------------------- */
+
+// Pagine del sito di ogni negozio: /s/<codice>, /s/<codice>/servizi, …
+const SHOP_PAGES = { home: '', servizi: 'Servizi e prezzi', 'chi-siamo': 'Chi siamo', contatti: 'Orari e contatti' };
+
+/**
+ * Una pagina del sito del negozio. L'HTML arriva già con nome, titolo e
+ * link giusti (utile anche per Google); il resto lo riempie /js/site.js.
+ * business = null → negozio inesistente o disattivato (la pagina lo dice).
+ */
+function renderShopPage(business, page, slug) {
+  const name = business ? business.name : 'Pagina non disponibile';
+  const tagline = business ? business.tagline : '';
+  const data = {
+    name,
+    slug,
+    page,
+    base: `/s/${slug}`,
+    pageTitle: page === 'home' ? `${name} · Prenota online` : `${SHOP_PAGES[page]} · ${name}`,
+    description: business ? `${name}${tagline ? ` – ${tagline}` : ''} Prenota online il tuo appuntamento.` : '',
+    ink: (business && business.primaryColor) || '#1c1917',
+    icon: (business && business.logo) || '/img/logo.svg',
+    year: new Date().getFullYear(),
+  };
+  const html = template('shop/layout.html').replace('{{content}}', template(`shop/${page}.html`));
+  return render(html, data);
+}
+
 /** Informativa privacy del negozio indicato, oppure della piattaforma (business = null). */
 function renderPrivacy(business) {
   const { name: platformName, email: platformEmail } = config.platform;
@@ -83,4 +111,4 @@ function renderPrivacy(business) {
   return render(template('privacy.html'), data);
 }
 
-module.exports = { renderLanding, renderPrivacy, render, escapeHtml };
+module.exports = { renderLanding, renderPrivacy, renderShopPage, SHOP_PAGES, render, escapeHtml };

@@ -56,6 +56,7 @@ function serializePublic(b) {
       gallery: [...b.site.gallery],
       demoNotice: b.site.demoNotice,
     },
+    reviews: { rating: (b.reviews && b.reviews.rating) || 0, count: (b.reviews && b.reviews.count) || 0, url: (b.reviews && b.reviews.url) || '' },
   };
 }
 
@@ -63,6 +64,7 @@ function serializePublic(b) {
 function serializeAdmin(b) {
   return {
     ...serializePublic(b),
+    reviews: { ...serializePublic(b).reviews, writeUrl: (b.reviews && b.reviews.writeUrl) || '' },
     notifyEmail: b.notifyEmail || '',
     type: b.type,
     active: b.active,
@@ -102,6 +104,26 @@ function applyEditable(doc, body) {
     const email = str(body.notifyEmail, 120).toLowerCase();
     if (email && !EMAIL_RE.test(email)) throw badRequest('Email per gli avvisi non valida');
     doc.notifyEmail = email;
+  }
+  if (body.reviews && typeof body.reviews === 'object') {
+    const r = body.reviews;
+    if (r.rating !== undefined) {
+      const rating = Math.round(Number(r.rating) * 10) / 10;
+      if (!(rating >= 0 && rating <= 5)) throw badRequest('Valutazione non valida (da 0 a 5)');
+      doc.reviews.rating = rating;
+    }
+    if (r.count !== undefined) {
+      const count = Number(r.count);
+      if (!Number.isInteger(count) || count < 0) throw badRequest('Numero di recensioni non valido');
+      doc.reviews.count = count;
+    }
+    for (const key of ['url', 'writeUrl']) {
+      if (r[key] !== undefined) {
+        const url = str(r[key], 500);
+        if (url && !/^https:\/\/[^\s"'<>]+$/.test(url)) throw badRequest('Il link delle recensioni deve iniziare con https://');
+        doc.reviews[key] = url;
+      }
+    }
   }
   for (const key of ['primaryColor', 'accentColor']) {
     if (body[key] !== undefined) {

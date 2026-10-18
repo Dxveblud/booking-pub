@@ -54,6 +54,7 @@ function serializeSettings(settings) {
     maxDaysAhead: settings.maxDaysAhead,
     cancelNoticeMinutes: settings.cancelNoticeMinutes,
     reminderHours: settings.reminderHours,
+    reviewDelayMinutes: settings.reviewDelayMinutes,
   };
 }
 
@@ -83,7 +84,7 @@ function parseOpeningHours(input) {
 async function updateSettings(businessId, body) {
   const settings = await getSettings(businessId);
   if (body.openingHours !== undefined) settings.openingHours = parseOpeningHours(body.openingHours);
-  for (const key of ['slotStepMinutes', 'minNoticeMinutes', 'maxDaysAhead', 'cancelNoticeMinutes', 'reminderHours']) {
+  for (const key of ['slotStepMinutes', 'minNoticeMinutes', 'maxDaysAhead', 'cancelNoticeMinutes', 'reminderHours', 'reviewDelayMinutes']) {
     if (body[key] !== undefined) {
       const n = Number(body[key]);
       if (!Number.isInteger(n)) throw badRequest(`Valore non valido per ${key}`);

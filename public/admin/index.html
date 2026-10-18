@@ -129,8 +129,9 @@
         <div class="grid-2">
           <label class="field"><span>Il cliente può disdire online fino a (ore prima)</span><input name="cancelNoticeHours" type="number" min="0" max="168" step="1" required></label>
           <label class="field"><span>Promemoria email al cliente (ore prima, 0 = no)</span><input name="reminderHours" type="number" min="0" max="168" step="1" required></label>
+          <label class="field"><span>Email "Com'è andata?" (minuti dopo la fine, 0 = no)</span><input name="reviewDelayMinutes" type="number" min="0" max="2880" step="15" required></label>
         </div>
-        <p class="muted small">Il link per disdire e il promemoria arrivano ai clienti che lasciano l'email prenotando.</p>
+        <p class="muted small">Il link per disdire, il promemoria e la richiesta di recensione arrivano ai clienti che lasciano l'email prenotando. La richiesta di recensione parte solo se in Negozio hai inserito il link per lasciarla.</p>
         <button type="submit" class="btn btn-primary">Salva orari</button>
       </form>
     </section>
@@ -163,6 +164,15 @@
         <h2 class="mt">Avvisi</h2>
         <label class="field"><span>Email per gli avvisi <small>(ricevi un'email a ogni prenotazione online; vuoto = nessun avviso)</small></span><input name="notifyEmail" type="email" maxlength="120" placeholder="tuonome@gmail.com" autocomplete="email"></label>
         <p class="muted small" id="notify-warning" hidden>L'invio delle email non è ancora attivo sul server: l'indirizzo viene salvato e gli avvisi partiranno appena sarà configurato.</p>
+
+        <h2 class="mt">Recensioni Google</h2>
+        <p class="muted small">Valutazione e numero di recensioni compaiono sulla tua pagina (copiali dalla tua scheda Google e aggiornali ogni tanto). Con il link "per lasciare una recensione", dopo ogni appuntamento il cliente riceve un'email "Com'è andata?" con il pulsante per recensirti: lo trovi nel tuo Profilo dell'attività su Google, alla voce "Chiedi recensioni".</p>
+        <div class="grid-2">
+          <label class="field"><span>Valutazione <small>(es. 4,8)</small></span><input name="reviewRating" type="number" min="0" max="5" step="0.1" inputmode="decimal"></label>
+          <label class="field"><span>Numero di recensioni</span><input name="reviewCount" type="number" min="0" step="1" inputmode="numeric"></label>
+          <label class="field"><span>Link per leggere le recensioni</span><input name="reviewUrl" type="url" maxlength="500" placeholder="https://maps.app.goo.gl/…"></label>
+          <label class="field"><span>Link per lasciare una recensione</span><input name="reviewWriteUrl" type="url" maxlength="500" placeholder="https://g.page/r/…/review"></label>
+        </div>
 
         <h2 class="mt">Aspetto</h2>
         <div class="grid-2">

@@ -944,6 +944,7 @@
     f.maxDaysAhead.value = s.maxDaysAhead;
     f.cancelNoticeHours.value = Math.round((s.cancelNoticeMinutes || 0) / 60);
     f.reminderHours.value = s.reminderHours;
+    f.reviewDelayMinutes.value = s.reviewDelayMinutes;
   }
 
   function saveHours(e) {
@@ -964,6 +965,7 @@
         maxDaysAhead: Number(f.maxDaysAhead.value),
         cancelNoticeMinutes: Number(f.cancelNoticeHours.value) * 60,
         reminderHours: Number(f.reminderHours.value),
+        reviewDelayMinutes: Number(f.reviewDelayMinutes.value),
       },
     })
       .then(function (s) { state.settings = s; renderHours(); toast('Orari salvati'); })
@@ -1068,6 +1070,11 @@
     var f = $('shop-form').elements;
     ['name', 'tagline', 'description', 'address', 'phone', 'email', 'instagram'].forEach(function (k) { f[k].value = b[k] || ''; });
     f.notifyEmail.value = b.notifyEmail || '';
+    var rv = b.reviews || {};
+    f.reviewRating.value = rv.rating || '';
+    f.reviewCount.value = rv.count || '';
+    f.reviewUrl.value = rv.url || '';
+    f.reviewWriteUrl.value = rv.writeUrl || '';
     $('notify-warning').hidden = Boolean(state.me.features && state.me.features.email);
     f.primaryColor.value = b.primaryColor || '#1c1917';
     f.accentColor.value = b.accentColor || '#b08a4e';
@@ -1091,6 +1098,7 @@
       name: f.name.value, tagline: f.tagline.value, description: f.description.value,
       address: f.address.value, phone: f.phone.value, email: f.email.value, instagram: f.instagram.value,
       notifyEmail: f.notifyEmail.value,
+      reviews: { rating: Number(String(f.reviewRating.value).replace(',', '.')) || 0, count: Number(f.reviewCount.value) || 0, url: f.reviewUrl.value.trim(), writeUrl: f.reviewWriteUrl.value.trim() },
       primaryColor: f.primaryColor.value, accentColor: f.accentColor.value,
       logo: draft.images.logo || '',
       site: {

@@ -39,6 +39,14 @@ const businessSchema = new mongoose.Schema(
       gallery: { type: [String], default: [] },
       demoNotice: { type: String, trim: true, maxlength: 300, default: '' },
     },
+    // Recensioni Google: valutazione mostrata sulla pagina (inserita dal titolare),
+    // link per leggerle e link per lasciarne una (usato nell'email "Com'è andata?")
+    reviews: {
+      rating: { type: Number, min: 0, max: 5, default: 0 },
+      count: { type: Number, min: 0, default: 0 },
+      url: { type: String, trim: true, default: '' },
+      writeUrl: { type: String, trim: true, default: '' },
+    },
     // Indirizzo che riceve un'email a ogni prenotazione online (vuoto = nessun avviso)
     notifyEmail: { type: String, trim: true, lowercase: true, maxlength: 120, default: '' },
     active: { type: Boolean, default: true }, // se false widget e pagina mostrano "non disponibile"

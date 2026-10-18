@@ -85,6 +85,18 @@ const TEMPLATES = {
     intro: `Ciao ${firstName(k)}, ti ricordiamo il tuo appuntamento.`,
     outro: 'Se non puoi più venire, disdici dal pulsante qui sopra.',
   }),
+  review: (b, k) => {
+    const { html, text } = renderEmail({
+      business: b,
+      eyebrow: "Com'è andata?",
+      intro: `Ciao ${firstName(k)}, grazie per essere passato da ${b.name}! Ti è piaciuto il risultato? Ci aiuteresti moltissimo lasciando una recensione su Google: bastano 30 secondi.`,
+      rows: [['Servizio', k.serviceName], ['Quando', when(b, k)]].concat(k.staffName ? [['Con', k.staffName]] : []),
+      button: { href: b.reviews.writeUrl, label: 'Lascia una recensione' },
+      outro: 'Se qualcosa non è andato come speravi, rispondi a questa email: ci teniamo a saperlo.',
+      footer: `Hai ricevuto questa email perché hai avuto un appuntamento da ${b.name}.`,
+    });
+    return { subject: `Com'è andata da ${b.name}?`, text, html, replyTo: b.email || undefined };
+  },
 };
 
 async function send(template, booking) {
@@ -160,8 +172,56 @@ async function sendDueReminders() {
   return sent;
 }
 
+/* ------------------------- "Com'è andata?" ------------------------------ */
+
+/**
+ * Dopo l'appuntamento (reviewDelayMinutes dalla fine, default 60) chiede al
+ * cliente una recensione su Google, se il negozio ha inserito il link per
+ * lasciarla. Una sola volta per prenotazione, e solo entro le 24 ore
+ * successive: dopo un aggiornamento non partono richieste per appuntamenti vecchi.
+ */
+async function sendDueReviewRequests() {
+  if (!mailer.isEnabled()) return 0;
+  const today = nowInTimezone('Europe/Rome').date;
+  const candidates = await Booking.find({
+    status: 'confirmed',
+    isDemo: { $ne: true },
+    'customer.email': { $nin: ['', null] },
+    'notifications.reviewRequestSentAt': null,
+    date: { $gte: addDays(today, -2), $lte: addDays(today, 1) },
+  });
+
+  let sent = 0;
+  for (const booking of candidates) {
+    const business = await getBusiness(booking.businessId);
+    if (!business || !business.active || !customerEmailsEnabled(business)) continue;
+    if (!business.reviews || !business.reviews.writeUrl) continue;
+    const { reviewDelayMinutes } = await getSettings(business.slug);
+    if (!reviewDelayMinutes) continue;
+
+    const now = nowInTimezone(business.timezone);
+    // Minuti passati dalla fine dell'appuntamento (giorni di differenza × 1440 + minuti)
+    const sinceEnd = diffDays(booking.date, now.date) * 1440 + now.minutes - booking.endMinutes;
+    if (sinceEnd < reviewDelayMinutes || sinceEnd > reviewDelayMinutes + 24 * 60) continue;
+
+    const claimed = await Booking.updateOne(
+      { _id: booking._id, 'notifications.reviewRequestSentAt': null },
+      { $set: { 'notifications.reviewRequestSentAt': new Date() } }
+    );
+    if (!claimed.modifiedCount) continue;
+    try {
+      await mailer.sendMail({ to: booking.customer.email, ...TEMPLATES.review(business, booking) });
+      sent += 1;
+    } catch (err) {
+      console.error('[recensioni] Invio non riuscito:', err.message);
+      await Booking.updateOne({ _id: booking._id }, { $unset: { 'notifications.reviewRequestSentAt': 1 } });
+    }
+  }
+  return sent;
+}
+
 function startReminderJob() {
-  const run = () => sendDueReminders().catch((err) => console.error('[promemoria]', err));
+  const run = () => Promise.all([sendDueReminders(), sendDueReviewRequests()]).catch((err) => console.error('[promemoria]', err));
   setTimeout(run, 30 * 1000).unref();
   setInterval(run, REMINDER_INTERVAL_MS).unref();
 }
@@ -172,4 +232,6 @@ function registerCustomerNotifications() {
   onBookingEvent(BOOKING_EVENTS.CANCELLED, onCancelled);
 }
 
-module.exports = { registerCustomerNotifications, customerEmailsEnabled, sendDueReminders, startReminderJob, TEMPLATES };
+module.exports = {
+  registerCustomerNotifications, customerEmailsEnabled, sendDueReminders, sendDueReviewRequests, startReminderJob, TEMPLATES,
+};

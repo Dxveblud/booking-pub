@@ -173,3 +173,8 @@ p { margin: 0; }
 .legal .muted { color: var(--muted); font-size: .92rem; }
 .legal a { color: #8a6a37; }
 .footer a { color: var(--on-dark); }
+
+/* Voci del menu come pulsanti (scorrono alla sezione senza "#" nell'indirizzo) */
+button.brand { background: none; border: 0; padding: 0; cursor: pointer; }
+.nav-links button { background: none; border: 0; padding: 0; cursor: pointer; font: inherit; color: var(--on-dark-muted); font-size: .92rem; }
+.nav-links button:hover { color: #fff; }

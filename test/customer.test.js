@@ -195,6 +195,33 @@ test('promemoria: uno solo, alle prenotazioni fatte per tempo', async () => {
   assert.equal(await sendDueReminders(), 0, 'nessun doppione');
 });
 
+test('recensioni: valutazione sulla pagina ed email "Com\'è andata?" dopo l\'appuntamento', async () => {
+  const { sendDueReviewRequests } = require('../src/services/notifications/customer');
+  // Senza link per lasciare una recensione non parte nulla
+  const { nowInTimezone, addDays, fromMinutes } = time();
+  const now = nowInTimezone('Europe/Rome');
+  const startAbs = now.minutes - 120; // iniziato 2 ore fa, finito 90 minuti fa (Taglio = 30 min)
+  const date = addDays(now.date, Math.floor(startAbs / 1440));
+  const start = ((startAbs % 1440) + 1440) % 1440;
+  const past = await owner('POST', '/admin/api/bookings', { serviceId: service.id, date, time: fromMinutes(Math.floor(start / 5) * 5), customer: { name: 'Elena Viola', phone: '3330000006', email: 'elena@example.com' } });
+  assert.equal(past.status, 201);
+  assert.equal(await sendDueReviewRequests(), 0);
+
+  const r = await owner('PUT', '/admin/api/business', { reviews: { rating: 4.8, count: 37, url: 'https://maps.example.com/sole', writeUrl: 'https://g.page/r/sole/review' } });
+  assert.equal(r.status, 200);
+  assert.equal(r.data.reviews.writeUrl, 'https://g.page/r/sole/review');
+  assert.equal((await owner('PUT', '/admin/api/business', { reviews: { rating: 7 } })).status, 400);
+  assert.equal((await owner('PUT', '/admin/api/business', { reviews: { url: 'javascript:alert(1)' } })).status, 400);
+  const pub = (await anon('GET', '/api/business?shop=barberia-sole')).data;
+  assert.deepEqual(pub.reviews, { rating: 4.8, count: 37, url: 'https://maps.example.com/sole' }, 'il link per scrivere non serve alla pagina pubblica');
+
+  assert.ok((await sendDueReviewRequests()) >= 1);
+  const mail = mailsTo('elena@example.com').at(-1);
+  assert.match(mail.subject, /^Com'è andata da Barberia Sole\?/);
+  assert.match(mail.text, /https:\/\/g\.page\/r\/sole\/review/);
+  assert.equal(await sendDueReviewRequests(), 0, 'una sola richiesta per appuntamento');
+});
+
 test('anti-spam: campo trappola e massimo di prenotazioni per numero', async () => {
   const date = nextTuesday();
   const trap = await anon('POST', '/api/bookings?shop=barberia-sole', {

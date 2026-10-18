@@ -1,6 +1,7 @@
 /**
- * Sito template: riempie la pagina con i dati di config.json (via API).
+ * Pagina del negozio (/s/<codice>): riempie la pagina con i dati del negozio (via API).
  * I pulsanti "Prenota" sono gestiti dal widget (attributo data-booking-open).
+ * I pulsanti [data-scroll] portano alle sezioni senza cambiare l'indirizzo (niente "#").
  */
 (function () {
   'use strict';
@@ -15,12 +16,11 @@
   var widgetScript = document.querySelector('script[src*="widget/widget.js"]');
   if (widgetScript && SHOP) widgetScript.setAttribute('data-shop', SHOP);
 
-
   /** Logo di ripiego: l'iniziale del negozio nei suoi colori. */
   function monogram(name, color) {
     var letter = (String(name || '').trim().charAt(0) || '•').toUpperCase().replace(/[^A-Z0-9À-Ý]/, '•');
-    var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="' + (color || '#1c1917') +
-      '"/><text x="32" y="43" font-family="Georgia,serif" font-size="32" fill="#fff" text-anchor="middle">' + letter + '</text></svg>';
+    var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><circle cx="32" cy="32" r="31" fill="' + (color || '#1c1917') +
+      '" stroke="rgba(255,255,255,.35)"/><text x="32" y="42" font-family="Georgia,serif" font-size="28" fill="#fff" text-anchor="middle">' + letter + '</text></svg>';
     return 'data:image/svg+xml,' + encodeURIComponent(svg);
   }
 
@@ -47,6 +47,21 @@
     return { day: wd, minutes: +get('hour') * 60 + +get('minute') };
   }
 
+  /* ---------------------- Scorrimento alle sezioni ---------------------- */
+
+  document.addEventListener('click', function (e) {
+    var btn = e.target.closest && e.target.closest('[data-scroll]');
+    if (!btn) return;
+    var id = btn.getAttribute('data-scroll');
+    if (id === 'top') { window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
+    var target = $(id);
+    if (!target || target.hidden) return;
+    var navH = $('nav') ? $('nav').offsetHeight : 0;
+    window.scrollTo({ top: target.getBoundingClientRect().top + window.scrollY - navH, behavior: 'smooth' });
+  });
+
+  /* ------------------------------ Contenuti ----------------------------- */
+
   function renderBusiness(b) {
     var site = b.site || {};
     document.title = b.name + ' · Prenota online';
@@ -56,31 +71,38 @@
     text('biz-tagline', b.tagline);
     text('biz-description', b.description);
     text('biz-address', b.address);
-    text('biz-footer', b.address + (b.phone ? ' · ' + b.phone : ''));
-    if (b.address) text('hero-eyebrow', 'Su appuntamento · ' + (b.mapsQuery || b.address.split(',').pop().trim()));
+    text('biz-footer', [b.address, b.phone].filter(Boolean).join(' · '));
+    if (b.address) text('hero-eyebrow', 'Su appuntamento · ' + (b.mapsQuery || b.address.split(',').pop().replace(/\d{5}/, '').trim()));
+
     var logo = b.logo || monogram(b.name, b.primaryColor);
     $('biz-logo').src = logo;
+    $('biz-logo').alt = b.name;
     document.querySelectorAll('.brand-footer img').forEach(function (img) { img.src = logo; });
+    // Il logo grande nell'hero compare solo se il negozio ne ha caricato uno
+    if (b.logo) { $('hero-logo').src = b.logo; $('hero-logo').alt = b.name; $('hero-logo').hidden = false; }
+
     if (b.phone) {
       var tel = 'tel:' + b.phone.replace(/[^+\d]/g, '');
-      $('biz-phone').textContent = b.phone; $('biz-phone').href = tel; $('hero-call').href = tel;
+      $('biz-phone').textContent = b.phone; $('biz-phone').href = tel; $('biz-phone').hidden = false;
+      $('hero-call').href = tel;
     } else {
       $('hero-call').hidden = true;
     }
-    if (b.email) { $('biz-email').textContent = b.email; $('biz-email').href = 'mailto:' + b.email; }
-    $('privacy-link').href = '/s/' + encodeURIComponent(b.slug) + '/privacy';
+    if (b.email) { $('biz-email').textContent = b.email; $('biz-email').href = 'mailto:' + b.email; $('biz-email').hidden = false; }
     $('maps-link').href = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(b.address || b.name);
+    $('privacy-link').href = '/s/' + encodeURIComponent(b.slug) + '/privacy';
 
     var root = document.documentElement.style;
     if (b.primaryColor) root.setProperty('--ink', b.primaryColor);
     if (b.accentColor) root.setProperty('--accent', b.accentColor);
+    var theme = document.querySelector('meta[name="theme-color"]');
+    if (theme && b.primaryColor) theme.content = b.primaryColor;
     var meta = document.querySelector('meta[name="description"]');
     if (meta && b.tagline) meta.content = b.name + ' – ' + b.tagline + ' Prenota online.';
 
-    if (site.heroImage) $('hero').style.backgroundImage = 'url("' + site.heroImage + '")';
+    if (site.heroImage) { $('hero').style.backgroundImage = 'url("' + site.heroImage + '")'; $('hero').classList.add('has-photo'); }
     if (site.aboutImage) { $('about-img').src = site.aboutImage; $('about-img').alt = b.name; $('about-img').hidden = false; }
     if (site.aboutTitle) text('about-title', site.aboutTitle);
-    if (!b.description && !site.aboutImage) $('chi-siamo').hidden = true;
     if (!site.aboutImage) $('chi-siamo').classList.add('no-photo');
 
     var hl = $('highlights');
@@ -93,6 +115,8 @@
       li.appendChild(body);
       hl.appendChild(li);
     });
+    renderReviews(b.reviews);
+    if (!b.description && !site.aboutImage && !(site.highlights || []).length && !(b.reviews && b.reviews.rating)) $('chi-siamo').hidden = true;
 
     var gallery = $('gallery');
     if (!(site.gallery || []).length) $('galleria').hidden = true;
@@ -102,6 +126,11 @@
       img.src = src; img.alt = ''; img.loading = 'lazy';
       fig.appendChild(img);
       gallery.appendChild(fig);
+    });
+    // Voci del menu per sezioni nascoste
+    document.querySelectorAll('.nav-links [data-scroll]').forEach(function (btn) {
+      var target = $(btn.getAttribute('data-scroll'));
+      if (target && target.hidden) btn.hidden = true;
     });
 
     if (site.demoNotice) {
@@ -113,18 +142,37 @@
     return b;
   }
 
+  /** Valutazione Google (inserita dal negozio) con il link alle recensioni. */
+  function renderReviews(r) {
+    if (!r || !r.rating) return;
+    var box = el('div', 'reviews');
+    var full = Math.round(r.rating);
+    box.appendChild(el('span', 'reviews-stars', '★★★★★'.slice(0, full) + '☆☆☆☆☆'.slice(0, 5 - full)));
+    box.appendChild(el('span', 'reviews-score', Number(r.rating).toFixed(1).replace('.', ',')));
+    if (r.count) box.appendChild(el('span', 'reviews-count', r.count + (r.count === 1 ? ' recensione' : ' recensioni') + ' su Google'));
+    if (r.url) {
+      var a = el('a', 'btn btn-outline btn-sm', 'Leggi le recensioni');
+      a.href = r.url; a.target = '_blank'; a.rel = 'noopener';
+      box.appendChild(a);
+    }
+    document.querySelector('#chi-siamo .about-text').appendChild(box);
+  }
+
   function renderServices(services, b) {
     var fmt = new Intl.NumberFormat(b.locale || 'it-IT', { style: 'currency', currency: b.currency || 'EUR', minimumFractionDigits: 0 });
     var ul = $('services');
     ul.innerHTML = '';
     services.forEach(function (s) {
       var li = el('li', 'menu-item');
-      li.appendChild(el('span', 'menu-name', s.name));
-      li.appendChild(el('span', 'menu-price', fmt.format(s.price)));
-      li.appendChild(el('span', 'menu-desc', s.description || ''));
-      var meta = el('span', 'menu-meta');
-      meta.appendChild(el('span', 'menu-duration', s.durationMinutes + ' min'));
-      var book = el('button', 'menu-book', 'Prenota →');
+      var line = el('div', 'menu-line');
+      line.appendChild(el('span', 'menu-name', s.name));
+      line.appendChild(el('span', 'menu-dots'));
+      line.appendChild(el('span', 'menu-price', fmt.format(s.price)));
+      li.appendChild(line);
+      if (s.description) li.appendChild(el('span', 'menu-desc', s.description));
+      var meta = el('div', 'menu-meta');
+      meta.appendChild(el('span', 'menu-duration', s.durationMinutes + ' minuti'));
+      var book = el('button', 'menu-book', 'Prenota');
       book.type = 'button';
       book.addEventListener('click', function () {
         if (window.BookingWidget) window.BookingWidget.open({ serviceId: s.id });
@@ -143,7 +191,7 @@
       var intervals = hours[d] || [];
       var dt = el('dt', d === now.day ? 'today' : '', DAYS[d]);
       var dd = el('dd', d === now.day ? 'today' : (intervals.length ? '' : 'closed'), intervals.length ? null : 'Chiuso');
-      intervals.forEach(function (i) { dd.appendChild(el('span', null, i.start + '–' + i.end)); });
+      intervals.forEach(function (i) { dd.appendChild(el('span', null, i.start + ' – ' + i.end)); });
       dl.appendChild(dt);
       dl.appendChild(dd);
     });
@@ -189,5 +237,6 @@
       $('hero-call').hidden = true;
       text('biz-tagline', 'Questo negozio non esiste o non è più attivo.');
       document.querySelectorAll('[data-booking-open]').forEach(function (b) { b.hidden = true; });
+      document.querySelectorAll('.section, .cta').forEach(function (s) { s.hidden = true; });
     });
 })();

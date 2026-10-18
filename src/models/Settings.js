@@ -34,6 +34,8 @@ const settingsSchema = new mongoose.Schema(
     cancelNoticeMinutes: { type: Number, default: 120, min: 0, max: 10080 },
     // Promemoria email al cliente: quante ore prima (0 = nessun promemoria)
     reminderHours: { type: Number, default: 24, min: 0, max: 168 },
+    // Email "Com'è andata?" con il link per la recensione: quanti minuti dopo la fine (0 = mai)
+    reviewDelayMinutes: { type: Number, default: 60, min: 0, max: 2880 },
     // Versione dei dati di esempio già caricati (solo modalità demo)
     demoSeedVersion: { type: Number, default: 0 },
   },

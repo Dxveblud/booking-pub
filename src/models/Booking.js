@@ -54,6 +54,7 @@ const bookingSchema = new mongoose.Schema(
     notifications: {
       confirmationSentAt: { type: Date },
       reminderSentAt: { type: Date },
+      reviewRequestSentAt: { type: Date }, // email "Com'è andata? Lascia una recensione"
     },
   },
   { timestamps: true }

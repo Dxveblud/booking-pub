@@ -19,17 +19,17 @@
 
   <header class="nav" id="nav">
     <div class="container nav-inner">
-      <a class="brand" href="#top">
-        <img id="biz-logo" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="" width="36" height="36">
+      <button type="button" class="brand" data-scroll="top" aria-label="Torna su">
+        <img id="biz-logo" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="" width="40" height="40">
         <span id="biz-name-header">La tua attività</span>
-      </a>
+      </button>
       <nav class="nav-links" aria-label="Sezioni">
-        <a href="#servizi">Servizi</a>
-        <a href="#chi-siamo">Chi siamo</a>
-        <a href="#galleria">Galleria</a>
-        <a href="#orari">Orari e contatti</a>
+        <button type="button" data-scroll="servizi">Servizi</button>
+        <button type="button" data-scroll="chi-siamo">Chi siamo</button>
+        <button type="button" data-scroll="galleria">Galleria</button>
+        <button type="button" data-scroll="orari">Orari e contatti</button>
       </nav>
-      <button type="button" class="btn btn-accent btn-sm" data-booking-open>Prenota</button>
+      <button type="button" class="btn btn-line btn-sm" data-booking-open>Prenota</button>
     </div>
   </header>
 
@@ -38,22 +38,24 @@
     <section class="hero" id="hero">
       <div class="hero-shade"></div>
       <div class="container hero-content">
+        <img class="hero-logo" id="hero-logo" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="" hidden>
         <p class="eyebrow" id="hero-eyebrow">Su appuntamento</p>
         <h1 id="biz-name">La tua attività</h1>
+        <span class="rule" aria-hidden="true"></span>
         <p class="hero-tagline" id="biz-tagline"></p>
         <div class="hero-actions">
           <button type="button" class="btn btn-accent btn-lg" data-booking-open>Prenota online</button>
-          <a class="btn btn-ghost btn-lg" id="hero-call" href="#orari">Chiama</a>
+          <a class="btn btn-ghost btn-lg" id="hero-call" href="tel:">Chiama</a>
         </div>
         <p class="open-status" id="open-status" hidden></p>
       </div>
     </section>
 
     <!-- SERVIZI -->
-    <section class="section section-light" id="servizi">
+    <section class="section" id="servizi">
       <div class="container">
         <div class="section-head">
-          <p class="eyebrow eyebrow-dark">Listino</p>
+          <p class="eyebrow">Listino</p>
           <h2>Servizi e prezzi</h2>
           <p class="muted">Scegli il servizio e prenota l'orario che preferisci: vedi solo quelli davvero liberi.</p>
         </div>
@@ -62,11 +64,11 @@
     </section>
 
     <!-- CHI SIAMO -->
-    <section class="section" id="chi-siamo">
+    <section class="section section-soft" id="chi-siamo">
       <div class="container about">
         <figure class="about-photo"><img id="about-img" src="" alt="" loading="lazy" hidden></figure>
         <div class="about-text">
-          <p class="eyebrow eyebrow-dark">Chi siamo</p>
+          <p class="eyebrow">Chi siamo</p>
           <h2 id="about-title">Chi siamo</h2>
           <p class="lead" id="biz-description"></p>
           <ul class="highlights" id="highlights"></ul>
@@ -75,7 +77,7 @@
     </section>
 
     <!-- GALLERIA -->
-    <section class="section section-dark" id="galleria">
+    <section class="section" id="galleria">
       <div class="container">
         <div class="section-head">
           <p class="eyebrow">Galleria</p>
@@ -86,20 +88,26 @@
     </section>
 
     <!-- ORARI E CONTATTI -->
-    <section class="section section-light" id="orari">
-      <div class="container info">
-        <div class="card">
-          <h2>Orari</h2>
-          <dl class="hours" id="hours"></dl>
+    <section class="section section-soft" id="orari">
+      <div class="container">
+        <div class="section-head">
+          <p class="eyebrow">Orari e contatti</p>
+          <h2>Ti aspettiamo</h2>
         </div>
-        <div class="card">
-          <h2>Dove siamo</h2>
-          <p class="contact-line" id="biz-address"></p>
-          <p class="contact-line"><a id="biz-phone" href="#"></a></p>
-          <p class="contact-line"><a id="biz-email" href="#"></a></p>
-          <div class="card-actions">
-            <a class="btn btn-dark" id="maps-link" href="#" target="_blank" rel="noopener">Indicazioni</a>
-            <button type="button" class="btn btn-accent" data-booking-open>Prenota</button>
+        <div class="info">
+          <div class="info-block">
+            <h3>Orari</h3>
+            <dl class="hours" id="hours"></dl>
+          </div>
+          <div class="info-block">
+            <h3>Dove siamo</h3>
+            <p class="contact-line" id="biz-address"></p>
+            <p class="contact-line"><a id="biz-phone" href="tel:" hidden></a></p>
+            <p class="contact-line"><a id="biz-email" href="mailto:" hidden></a></p>
+            <div class="card-actions">
+              <a class="btn btn-dark" id="maps-link" href="https://www.google.com/maps" target="_blank" rel="noopener">Indicazioni</a>
+              <button type="button" class="btn btn-outline" data-booking-open>Prenota</button>
+            </div>
           </div>
         </div>
       </div>
@@ -107,8 +115,9 @@
 
     <section class="cta">
       <div class="container cta-inner">
-        <h2>Il tuo posto è libero.</h2>
-        <p>Prenota in meno di un minuto, ti ricordiamo noi l'orario.</p>
+        <p class="eyebrow">Su appuntamento</p>
+        <h2>Il tuo posto ti aspetta.</h2>
+        <p>Prenota in meno di un minuto, a qualunque ora.</p>
         <button type="button" class="btn btn-accent btn-lg" data-booking-open>Prenota ora</button>
       </div>
     </section>

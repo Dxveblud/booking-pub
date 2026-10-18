@@ -983,10 +983,47 @@
     if (b.locale) LOCALE = b.locale;
     if (b.currency) CURRENCY = b.currency;
     $('business-logo').src = b.logo || monogram(b.name, b.primaryColor);
-    var root = document.documentElement.style;
-    if (b.primaryColor) root.setProperty('--primary', b.primaryColor);
-    if (b.accentColor) root.setProperty('--accent', b.accentColor);
+    state.brand = { primary: b.primaryColor, accent: b.accentColor };
+    applyBrandColors();
     $('view-site').href = '/s/' + b.slug;
+  }
+
+  /**
+   * Colori del negozio nel pannello. Nel tema scuro il colore principale
+   * (spesso scuro) renderebbe i pulsanti illeggibili: si usa quello d'accento.
+   */
+  function applyBrandColors() {
+    var brand = state.brand || {};
+    var root = document.documentElement.style;
+    var dark = document.documentElement.getAttribute('data-theme') === 'dark';
+    root.removeProperty('--primary');
+    root.removeProperty('--accent');
+    if (dark) {
+      if (brand.accent) { root.setProperty('--primary', brand.accent); root.setProperty('--accent', brand.accent); }
+    } else {
+      if (brand.primary) root.setProperty('--primary', brand.primary);
+      if (brand.accent) root.setProperty('--accent', brand.accent);
+    }
+  }
+
+  /** Pulsante ☀/☾: cambia tema e lo ricorda (vedi /admin/theme.js). */
+  function initThemeToggle() {
+    var btn = $('theme-toggle');
+    if (!btn) return;
+    var sync = function () {
+      var dark = document.documentElement.getAttribute('data-theme') === 'dark';
+      btn.textContent = dark ? '☀' : '☾';
+      btn.setAttribute('aria-label', dark ? 'Passa al tema chiaro' : 'Passa al tema scuro');
+      btn.title = btn.getAttribute('aria-label');
+    };
+    btn.addEventListener('click', function () {
+      var next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      try { localStorage.setItem('bt-theme', next); } catch (e) { /* storage non disponibile */ }
+      applyBrandColors();
+      sync();
+    });
+    sync();
   }
 
   function loadMe() {
@@ -1022,7 +1059,7 @@
   }
 
   // Bozza delle immagini del modulo (salvate solo con "Salva modifiche")
-  var draft = { images: {}, gallery: [], team: [] };
+  var draft = { images: {}, gallery: [], team: [], reviewItems: [] };
 
   function renderImageField(box) {
     var key = box.getAttribute('data-img');
@@ -1092,6 +1129,28 @@
     $('team-add').hidden = draft.team.length >= 12;
   }
 
+  /** Recensioni scelte: autore, stelle, quando, testo (bozza salvata con "Salva modifiche"). */
+  function renderReviewFields() {
+    var box = $('review-fields');
+    box.innerHTML = '';
+    if (!draft.reviewItems.length) box.appendChild(el('p', { class: 'muted small', text: 'Nessuna recensione: sul sito compaiono solo la valutazione e il link.' }));
+    draft.reviewItems.forEach(function (r, i) {
+      var stars = el('select', { 'aria-label': 'Stelle', onchange: function (e) { r.rating = Number(e.target.value); } });
+      [5, 4, 3, 2, 1].forEach(function (n) { stars.appendChild(el('option', { value: n, text: '★★★★★'.slice(0, n) + ' ' + n })); });
+      stars.value = String(r.rating || 5);
+      box.appendChild(el('div', { class: 'review-row' }, [
+        el('div', { class: 'review-top' }, [
+          el('input', { value: r.author || '', maxlength: 60, placeholder: 'Nome (es. Giulia R.)', 'aria-label': 'Autore', oninput: function (e) { r.author = e.target.value; } }),
+          stars,
+          el('input', { value: r.when || '', maxlength: 40, placeholder: 'Quando (es. un mese fa)', 'aria-label': 'Quando', oninput: function (e) { r.when = e.target.value; } }),
+        ]),
+        el('textarea', { rows: 3, maxlength: 600, placeholder: 'Testo della recensione', 'aria-label': 'Testo', oninput: function (e) { r.text = e.target.value; } }, [r.text || '']),
+        el('button', { type: 'button', class: 'btn btn-small btn-danger', text: 'Rimuovi', onclick: function () { draft.reviewItems.splice(i, 1); renderReviewFields(); } }),
+      ]));
+    });
+    $('review-add').hidden = draft.reviewItems.length >= 8;
+  }
+
   function renderShopPanel() {
     var b = state.me.business;
     var origin = window.location.origin;
@@ -1108,6 +1167,9 @@
     f.reviewCount.value = rv.count || '';
     f.reviewUrl.value = rv.url || '';
     f.reviewWriteUrl.value = rv.writeUrl || '';
+    f.placeId.value = (b.google && b.google.placeId) || '';
+    draft.reviewItems = (rv.items || []).map(function (it) { return { author: it.author, rating: it.rating, text: it.text, when: it.when }; });
+    renderReviewFields();
     $('notify-warning').hidden = Boolean(state.me.features && state.me.features.email);
     f.primaryColor.value = b.primaryColor || '#1c1917';
     f.accentColor.value = b.accentColor || '#b08a4e';
@@ -1134,7 +1196,9 @@
       name: f.name.value, tagline: f.tagline.value, description: f.description.value,
       address: f.address.value, phone: f.phone.value, email: f.email.value, instagram: f.instagram.value,
       notifyEmail: f.notifyEmail.value,
-      reviews: { rating: Number(String(f.reviewRating.value).replace(',', '.')) || 0, count: Number(f.reviewCount.value) || 0, url: f.reviewUrl.value.trim(), writeUrl: f.reviewWriteUrl.value.trim() },
+      reviews: { rating: Number(String(f.reviewRating.value).replace(',', '.')) || 0, count: Number(f.reviewCount.value) || 0, url: f.reviewUrl.value.trim(), writeUrl: f.reviewWriteUrl.value.trim(),
+        items: draft.reviewItems.filter(function (it) { return (it.author || '').trim() && (it.text || '').trim(); }) },
+      google: { placeId: f.placeId.value.trim() },
       primaryColor: f.primaryColor.value, accentColor: f.accentColor.value,
       logo: draft.images.logo || '',
       site: {
@@ -1184,6 +1248,12 @@
           .finally(function () { box.classList.remove('loading'); });
       });
       box.querySelector('.img-remove').addEventListener('click', function () { draft.images[key] = ''; renderImageField(box); });
+    });
+    $('review-add').addEventListener('click', function () {
+      draft.reviewItems.push({ author: '', rating: 5, text: '', when: '' });
+      renderReviewFields();
+      var last = $('review-fields').querySelector('.review-row:last-child input');
+      if (last) last.focus();
     });
     $('team-add').addEventListener('click', function () {
       draft.team.push({ name: '', role: '', photo: '' });
@@ -1335,6 +1405,7 @@
     });
 
     initShopForm();
+    initThemeToggle();
     initPlatform();
     loadMe().then(function () { showTab('calendar'); });
   }

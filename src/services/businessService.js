@@ -66,7 +66,12 @@ function serializePublic(b) {
 function serializeAdmin(b) {
   return {
     ...serializePublic(b),
-    reviews: { ...serializePublic(b).reviews, writeUrl: (b.reviews && b.reviews.writeUrl) || '' },
+    reviews: {
+      ...serializePublic(b).reviews,
+      writeUrl: (b.reviews && b.reviews.writeUrl) || '',
+      items: ((b.reviews && b.reviews.items) || []).map((it) => ({ author: it.author, rating: it.rating, text: it.text, when: it.when })),
+    },
+    google: { placeId: (b.google && b.google.placeId) || '' },
     notifyEmail: b.notifyEmail || '',
     type: b.type,
     active: b.active,
@@ -107,6 +112,14 @@ function applyEditable(doc, body) {
     if (email && !EMAIL_RE.test(email)) throw badRequest('Email per gli avvisi non valida');
     doc.notifyEmail = email;
   }
+  if (body.google && body.google.placeId !== undefined) {
+    const placeId = str(body.google.placeId, 300);
+    if (placeId && !/^[A-Za-z0-9_-]{10,300}$/.test(placeId)) throw badRequest('Scheda Google non valida');
+    if (placeId !== ((doc.google && doc.google.placeId) || '')) {
+      // Scheda cambiata: le recensioni si ricaricano alla prossima visita
+      doc.google = { placeId };
+    }
+  }
   if (body.reviews && typeof body.reviews === 'object') {
     const r = body.reviews;
     if (r.rating !== undefined) {
@@ -125,6 +138,16 @@ function applyEditable(doc, body) {
         if (url && !/^https:\/\/[^\s"'<>]+$/.test(url)) throw badRequest('Il link delle recensioni deve iniziare con https://');
         doc.reviews[key] = url;
       }
+    }
+    if (Array.isArray(r.items)) {
+      doc.reviews.items = r.items.slice(0, 8)
+        .map((it) => ({
+          author: str(it && it.author, 60),
+          rating: Math.min(5, Math.max(1, Math.round(Number(it && it.rating) || 5))),
+          text: str(it && it.text, 600),
+          when: str(it && it.when, 40),
+        }))
+        .filter((it) => it.author && it.text);
     }
   }
   for (const key of ['primaryColor', 'accentColor']) {

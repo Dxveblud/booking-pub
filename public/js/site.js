@@ -178,23 +178,63 @@
     list.forEach(function (name) { ul.appendChild(el('li', null, name)); });
   }
 
-  /** Valutazione Google (inserita dal negozio) con il link alle recensioni. */
-  function renderReviews(b) {
-    var r = b.reviews;
+  function starsText(n) {
+    var full = Math.max(0, Math.min(5, Math.round(n)));
+    return '★★★★★'.slice(0, full) + '☆☆☆☆☆'.slice(0, 5 - full);
+  }
+
+  /**
+   * Recensioni (da /api/reviews): valutazione complessiva e, se ci sono, le
+   * schede con il testo. Di solito le sceglie il titolare dal pannello.
+   */
+  function renderReviews(r) {
     var holder = $('reviews-box');
-    if (!holder || !r || !r.rating) return;
-    var box = el('div', 'reviews');
-    box.appendChild(el('p', 'eyebrow', 'Dicono di noi'));
-    var full = Math.round(r.rating);
-    box.appendChild(el('span', 'reviews-stars', '★★★★★'.slice(0, full) + '☆☆☆☆☆'.slice(0, 5 - full)));
-    box.appendChild(el('span', 'reviews-score', Number(r.rating).toFixed(1).replace('.', ',')));
-    if (r.count) box.appendChild(el('span', 'reviews-count', r.count + (r.count === 1 ? ' recensione' : ' recensioni') + ' su Google'));
-    if (r.url) {
-      var a = el('a', 'btn btn-outline btn-sm', 'Leggi le recensioni');
-      a.href = r.url; a.target = '_blank'; a.rel = 'noopener';
-      box.appendChild(a);
+    if (!holder || !r || (!r.rating && !(r.reviews || []).length)) return;
+    var head = el('div', 'reviews');
+    head.appendChild(el('p', 'eyebrow', 'Dicono di noi'));
+    if (r.rating) {
+      head.appendChild(el('span', 'reviews-stars', starsText(r.rating)));
+      head.appendChild(el('span', 'reviews-score', Number(r.rating).toFixed(1).replace('.', ',')));
+      if (r.count) head.appendChild(el('span', 'reviews-count', r.count + (r.count === 1 ? ' recensione' : ' recensioni') + ' su Google'));
     }
-    holder.appendChild(box);
+    holder.appendChild(head);
+
+    var list = r.reviews || [];
+    if (list.length) {
+      var grid = el('div', 'review-cards');
+      list.forEach(function (it) {
+        var card = el('figure', 'review-card');
+        card.appendChild(el('span', 'review-stars', starsText(it.rating)));
+        var quote = el('blockquote', 'review-text', it.text);
+        card.appendChild(quote);
+        // Testi lunghi: si aprono toccandoli
+        if (it.text.length > 220) {
+          card.classList.add('long');
+          quote.addEventListener('click', function () { card.classList.toggle('open'); });
+        }
+        var cap = el('figcaption');
+        var who = el(it.authorUrl ? 'a' : 'strong', 'review-author', it.author);
+        if (it.authorUrl) { who.href = it.authorUrl; who.target = '_blank'; who.rel = 'noopener nofollow'; }
+        cap.appendChild(who);
+        if (it.when) cap.appendChild(el('span', 'review-when', it.when));
+        card.appendChild(cap);
+        grid.appendChild(card);
+      });
+      holder.appendChild(grid);
+    }
+
+    var actions = el('div', 'reviews-actions');
+    if (r.url) {
+      var a = el('a', 'btn btn-outline btn-sm', 'Tutte le recensioni su Google');
+      a.href = r.url; a.target = '_blank'; a.rel = 'noopener';
+      actions.appendChild(a);
+    }
+    if (r.writeUrl) {
+      var w = el('a', 'btn btn-dark btn-sm', 'Lascia una recensione');
+      w.href = r.writeUrl; w.target = '_blank'; w.rel = 'noopener';
+      actions.appendChild(w);
+    }
+    if (actions.children.length) holder.appendChild(actions);
     $('reviews-section').hidden = false;
   }
 
@@ -319,7 +359,7 @@
       renderTeam(b);
       renderGallery(b);
       renderBrands(b);
-      renderReviews(b);
+      if ($('reviews-box')) getJson('/api/reviews').then(renderReviews).catch(function () { /* recensioni non disponibili */ });
       return Promise.all([needsServices ? getJson('/api/services') : [], getJson('/api/opening-hours')]).then(function (res) {
         renderServices(res[0], b);
         renderFeatured(res[0], b);

@@ -5,6 +5,7 @@
  *   GET  /api/business                               dati del negozio
  *   GET  /api/services                               servizi attivi
  *   GET  /api/staff?serviceId                        collaboratori che fanno quel servizio (vuoto = agenda unica)
+ *   GET  /api/reviews                                valutazione e recensioni (Google o inserite a mano)
  *   GET  /api/opening-hours                          orari di apertura settimanali
  *   GET  /api/availability/days?serviceId[&staffId]  giorni con almeno un orario libero
  *   GET  /api/availability?serviceId&date[&staffId]  orari liberi di un giorno
@@ -21,6 +22,7 @@ const { listServices, serializeService } = require('../services/catalogService')
 const { getSettings, serializeOpeningHours } = require('../services/settingsService');
 const { getAvailability } = require('../services/availability');
 const { candidatesFor, serializePublicStaff } = require('../services/staffService');
+const { getReviews } = require('../services/googleReviews');
 const { createBooking, serializePublicBooking } = require('../services/bookingService');
 const { customerEmailsEnabled } = require('../services/notifications/customer');
 const { addDays, fromMinutes, isValidDate, nowInTimezone } = require('../utils/time');
@@ -70,6 +72,11 @@ router.get('/services', async (req, res) => {
     const { active, sortOrder, ...pub } = serializeService(s);
     return pub;
   }));
+});
+
+// Recensioni da mostrare sul sito (da Google se la scheda è collegata)
+router.get('/reviews', async (req, res) => {
+  res.json(await getReviews(req.business));
 });
 
 router.get('/staff', async (req, res) => {

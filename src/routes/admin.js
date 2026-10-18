@@ -15,6 +15,7 @@ const blocks = require('../services/blockService');
 const businesses = require('../services/businessService');
 const { saveUpload, MAX_UPLOAD_BYTES } = require('../services/uploadService');
 const mailer = require('../services/mailer');
+const googleReviews = require('../services/googleReviews');
 const { listTemplates } = require('../services/templates');
 const { getSettings, updateSettings, serializeSettings } = require('../services/settingsService');
 const { Booking } = require('../models');
@@ -94,7 +95,7 @@ router.get('/me', (req, res) => {
     role: req.admin.role,
     business: businesses.serializeAdmin(req.business),
     // L'invio email è configurato sul server? (il pannello avvisa se manca)
-    features: { email: mailer.isEnabled() },
+    features: { email: mailer.isEnabled(), googlePlaces: googleReviews.isEnabled() },
   });
 });
 
@@ -134,6 +135,16 @@ router.put('/bookings/:id', async (req, res) => {
 router.delete('/bookings/:id', async (req, res) => {
   const booking = await bookingService.cancelBooking(req.business, req.params.id);
   res.json(bookingService.serializeBooking(booking));
+});
+
+/* --------------------------- Scheda Google ----------------------------- */
+
+// Cerca la scheda Google del negozio, per collegarla e mostrare le recensioni vere
+router.get('/google/places', async (req, res) => {
+  if (!googleReviews.isEnabled()) throw badRequest('Recensioni Google non attive sul server (manca la chiave API)');
+  const q = String(req.query.q || '').trim();
+  if (q.length < 3) throw badRequest('Scrivi il nome del negozio e la città');
+  res.json(await googleReviews.searchPlaces(q));
 });
 
 /* ---------------------------- Collaboratori ----------------------------- */

@@ -16,6 +16,7 @@ const { getSettings } = require('../settingsService');
 const { fromMinutes, nowInTimezone, addDays, diffDays } = require('../../utils/time');
 const { BOOKING_EVENTS, onBookingEvent } = require('../events');
 const { renderEmail, formatPrice, when, publicUrl } = require('./layout');
+const { writeReviewUrl } = require('../googleReviews');
 
 const REMINDER_INTERVAL_MS = 10 * 60 * 1000;
 
@@ -51,6 +52,9 @@ function build(business, booking, { eyebrow, subject, intro, outro, withLink = t
   });
   return { subject, text, html, replyTo: business.email || undefined, fromName: business.name };
 }
+
+/** Link per lasciare una recensione: quello inserito a mano, o quello della scheda Google collegata. */
+const reviewLink = (b) => (b.reviews && b.reviews.writeUrl) || writeReviewUrl(b.google && b.google.placeId);
 
 const firstName = (booking) => String(booking.customer.name || '').split(' ')[0];
 
@@ -91,7 +95,7 @@ const TEMPLATES = {
       eyebrow: "Com'è andata?",
       intro: `Ciao ${firstName(k)}, grazie per essere passato da ${b.name}! Ti è piaciuto il risultato? Ci aiuteresti moltissimo lasciando una recensione su Google: bastano 30 secondi.`,
       rows: [['Servizio', k.serviceName], ['Quando', when(b, k)]].concat(k.staffName ? [['Con', k.staffName]] : []),
-      button: { href: b.reviews.writeUrl, label: 'Lascia una recensione' },
+      button: { href: reviewLink(b), label: 'Lascia una recensione' },
       outro: 'Se qualcosa non è andato come speravi, rispondi a questa email: ci teniamo a saperlo.',
       footer: `Hai ricevuto questa email perché hai avuto un appuntamento da ${b.name}.`,
     });
@@ -195,7 +199,7 @@ async function sendDueReviewRequests() {
   for (const booking of candidates) {
     const business = await getBusiness(booking.businessId);
     if (!business || !business.active || !customerEmailsEnabled(business)) continue;
-    if (!business.reviews || !business.reviews.writeUrl) continue;
+    if (!reviewLink(business)) continue;
     const { reviewDelayMinutes } = await getSettings(business.slug);
     if (!reviewDelayMinutes) continue;
 

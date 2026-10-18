@@ -120,6 +120,20 @@ test('il titolare imposta l\'email per gli avvisi', async () => {
   assert.deepEqual(site.data.site.brands, ['Davines', 'Comfort Zone']);
   assert.equal((await owner('PUT', '/admin/api/business', { site: { team: [{ name: 'X', photo: 'javascript:alert(1)' }] } })).status, 400);
 
+  // Recensioni scelte dal titolare e link per recensire dal Place ID (senza chiave Google)
+  const rv = await owner('PUT', '/admin/api/business', {
+    reviews: { rating: 4.9, count: 12, items: [{ author: 'Marta', rating: 5, text: 'Bravissime!', when: 'un mese fa' }, { author: '', text: 'senza autore: scartata' }] },
+    google: { placeId: 'ChIJN1t_tDeuEmsRUsoyG83frY4' },
+  });
+  assert.equal(rv.status, 200);
+  assert.equal(rv.data.reviews.items.length, 1);
+  const pubReviews = (await anon('GET', '/api/reviews?shop=estetica-luna')).data;
+  assert.equal(pubReviews.rating, 4.9);
+  assert.deepEqual(pubReviews.reviews, [{ author: 'Marta', rating: 5, text: 'Bravissime!', when: 'un mese fa' }]);
+  assert.equal(pubReviews.writeUrl, 'https://search.google.com/local/writereview?placeid=ChIJN1t_tDeuEmsRUsoyG83frY4');
+  assert.equal((await owner('PUT', '/admin/api/business', { google: { placeId: 'non valido!' } })).status, 400);
+  await owner('PUT', '/admin/api/business', { google: { placeId: '' }, reviews: { items: [] } });
+
   // L'indirizzo degli avvisi non è pubblico
   assert.equal((await anon('GET', '/api/business?shop=estetica-luna')).data.notifyEmail, undefined);
 });

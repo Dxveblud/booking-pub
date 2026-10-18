@@ -58,6 +58,23 @@ const businessSchema = new mongoose.Schema(
       count: { type: Number, min: 0, default: 0 },
       url: { type: String, trim: true, default: '' },
       writeUrl: { type: String, trim: true, default: '' },
+      // Recensioni scelte dal titolare (es. copiate dalla sua scheda Google), mostrate sul sito
+      items: {
+        type: [new mongoose.Schema({
+          author: { type: String, trim: true, maxlength: 60 },
+          rating: { type: Number, min: 1, max: 5, default: 5 },
+          text: { type: String, trim: true, maxlength: 600 },
+          when: { type: String, trim: true, maxlength: 40, default: '' },
+        }, { _id: false })],
+        default: [],
+      },
+    },
+    // Scheda Google collegata: valutazione e recensioni vere arrivano da lì
+    // (cache aggiornata ogni 24 ore, vedi services/googleReviews.js)
+    google: {
+      placeId: { type: String, trim: true, default: '' },
+      cache: { type: mongoose.Schema.Types.Mixed },
+      errorAt: { type: Date },
     },
     // Indirizzo che riceve un'email a ogni prenotazione online (vuoto = nessun avviso)
     notifyEmail: { type: String, trim: true, lowercase: true, maxlength: 120, default: '' },

@@ -34,7 +34,7 @@ function nextTuesday() {
 
 test.before(async () => {
   mongo = await MongoMemoryServer.create();
-  process.env.CONFIG_PATH = path.join(__dirname, 'fixtures', 'config.json');
+  process.env.CONFIG_PATH = path.join(__dirname, 'fixtures', 'config-demo.json');
   process.env.MONGODB_URI = mongo.getUri('booking-shops');
   process.env.NODE_ENV = 'test';
   process.env.ADMIN_USERNAME = SUPER.username;
@@ -157,4 +157,33 @@ test('il super admin entra nei negozi e li può disattivare', async () => {
   assert.equal((await anon('GET', '/api/business?shop=barberia-mario')).status, 404);
   await superAdmin('PUT', '/admin/api/platform/shops/barberia-mario', { active: true });
   assert.equal((await anon('GET', '/api/business?shop=barberia-mario')).status, 200);
+});
+
+test('pannello demo: si entra senza password, solo prenotazioni e ferie modificabili', async () => {
+  // /admin/demo apre la sessione e reindirizza al pannello
+  const res = await fetch(`${base}/admin/demo`, { redirect: 'manual' });
+  assert.equal(res.status, 302);
+  const cookie = res.headers.get('set-cookie').split(';')[0];
+  const call = (method, url, body) => fetch(base + url, {
+    method,
+    headers: { Accept: 'application/json', 'Content-Type': 'application/json', Cookie: cookie },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  }).then(async (r) => ({ status: r.status, data: await r.json().catch(() => null) }));
+
+  const me = await call('GET', '/admin/api/me');
+  assert.equal(me.data.role, 'demo');
+  assert.equal(me.data.business.slug, 'demo');
+
+  const date = nextTuesday();
+  const service = (await anon('GET', '/api/services')).data[0];
+  const created = await call('POST', '/admin/api/bookings', { serviceId: service.id, date, time: '16:00', customer: { name: 'Prova Demo', phone: '3330000000' } });
+  assert.equal(created.status, 201);
+  assert.equal((await call('DELETE', `/admin/api/bookings/${created.data.id}`)).status, 200);
+
+  assert.equal((await call('PUT', '/admin/api/business', { name: 'Hackerato' })).status, 403);
+  assert.equal((await call('POST', '/admin/api/services', { name: 'x', durationMinutes: 30, price: 1 })).status, 403);
+  assert.equal((await call('PUT', '/admin/api/settings', { slotStepMinutes: 5 })).status, 403);
+  assert.equal((await call('PUT', '/admin/api/password', { current: 'x', password: 'yyyyyyyy' })).status, 403);
+  assert.equal((await call('GET', '/admin/api/platform/shops')).status, 403);
+  assert.equal((await anon('GET', '/api/business')).data.name, 'Barberia Demo');
 });

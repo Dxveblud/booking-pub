@@ -1,0 +1,99 @@
+{
+  "business": {
+    "id": "demo",
+    "name": "Barberia Demo",
+    "tagline": "Taglio, barba e cura dal 1990",
+    "description": "Questa è una descrizione segnaposto. Racconta qui la tua attività: chi sei, cosa offri e perché i clienti dovrebbero sceglierti. Modifica il testo nel file config.json.",
+    "logo": "/img/logo.svg",
+    "address": "Via Roma 1, 00100 Città",
+    "phone": "+39 000 000 0000",
+    "email": "info@example.com",
+    "primaryColor": "#1f6f5c",
+    "timezone": "Europe/Rome",
+    "currency": "EUR",
+    "locale": "it-IT"
+  },
+  "booking": {
+    "slotStepMinutes": 15,
+    "minNoticeMinutes": 60,
+    "maxDaysAhead": 60
+  },
+  "defaults": {
+    "openingHours": {
+      "0": [],
+      "1": [],
+      "2": [
+        {
+          "start": "09:00",
+          "end": "13:00"
+        },
+        {
+          "start": "15:00",
+          "end": "19:30"
+        }
+      ],
+      "3": [
+        {
+          "start": "09:00",
+          "end": "13:00"
+        },
+        {
+          "start": "15:00",
+          "end": "19:30"
+        }
+      ],
+      "4": [
+        {
+          "start": "09:00",
+          "end": "13:00"
+        },
+        {
+          "start": "15:00",
+          "end": "19:30"
+        }
+      ],
+      "5": [
+        {
+          "start": "09:00",
+          "end": "13:00"
+        },
+        {
+          "start": "15:00",
+          "end": "19:30"
+        }
+      ],
+      "6": [
+        {
+          "start": "09:00",
+          "end": "18:00"
+        }
+      ]
+    },
+    "services": [
+      {
+        "name": "Taglio uomo",
+        "durationMinutes": 30,
+        "price": 18,
+        "description": "Taglio con forbici e macchinetta"
+      },
+      {
+        "name": "Barba",
+        "durationMinutes": 20,
+        "price": 10,
+        "description": "Rifinitura e panno caldo"
+      },
+      {
+        "name": "Taglio + barba",
+        "durationMinutes": 45,
+        "price": 25,
+        "description": "Il pacchetto completo"
+      }
+    ]
+  },
+  "demo": {
+    "enabled": true,
+    "seedVersion": 1,
+    "fillRatio": 0.4,
+    "daysToFill": 3
+  }
+}

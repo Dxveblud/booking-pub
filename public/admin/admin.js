@@ -1031,6 +1031,15 @@
       state.me = me;
       $('admin-user').textContent = me.username;
       var isSuper = me.role === 'super';
+      var isDemo = me.role === 'demo';
+      document.body.classList.toggle('is-demo', isDemo);
+      $('demo-banner').hidden = !isDemo;
+      if (isDemo) {
+        $('admin-user').textContent = '';
+        // Prima visita alla demo: la settimana mostra subito un'agenda piena
+        if (!savedView()) state.view = 'week';
+        $('logout').textContent = 'Esci dalla demo';
+      }
       $('role-badge').hidden = !isSuper;
       $('tab-platform').hidden = !isSuper;
       document.body.classList.toggle('is-super', isSuper);
@@ -1401,7 +1410,8 @@
     $('hours-form').addEventListener('submit', saveHours);
 
     $('logout').addEventListener('click', function () {
-      api('/logout', { method: 'POST', body: {} }).finally(function () { window.location.href = '/admin/login'; });
+      var wasDemo = state.me && state.me.role === 'demo';
+      api('/logout', { method: 'POST', body: {} }).finally(function () { window.location.href = wasDemo ? '/' : '/admin/login'; });
     });
 
     initShopForm();

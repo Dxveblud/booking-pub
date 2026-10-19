@@ -5,6 +5,7 @@
 const path = require('path');
 const express = require('express');
 const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 const session = require('express-session');
 const { MongoStore } = require('connect-mongo');
 const mongoose = require('mongoose');
@@ -21,6 +22,9 @@ const { renderLanding, renderPrivacy, renderShopPage, SHOP_PAGES } = require('./
 
 const PUBLIC_DIR = path.join(config.ROOT, 'public');
 const SESSION_MAX_AGE = 8 * 60 * 60 * 1000; // 8 ore
+
+// Ogni accesso alla demo crea una sessione: limite per IP contro gli abusi
+const demoLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 30, standardHeaders: 'draft-8', legacyHeaders: false });
 
 /* ------------------------- Header di sicurezza -------------------------- */
 
@@ -105,6 +109,17 @@ function createApp() {
   });
   // Link "scegli una nuova password" (la pagina di login mostra il modulo giusto)
   app.get('/admin/reset/:token', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'admin', 'login.html')));
+  // Demo del pannello per il portfolio: entra come titolare del negozio demo,
+  // senza password. Funziona solo con la modalità demo attiva.
+  app.get('/admin/demo', demoLimiter, (req, res, next) => {
+    if (!config.demo.enabled) return res.redirect('/admin/login');
+    if (req.session.adminId) return res.redirect('/admin'); // già loggato davvero: non lo scollego
+    return req.session.regenerate((err) => {
+      if (err) return next(err);
+      req.session.demo = true;
+      return res.redirect('/admin');
+    });
+  });
   app.get(['/admin', '/admin/'], requireAdmin, (req, res) => {
     res.sendFile(path.join(PUBLIC_DIR, 'admin', 'index.html'));
   });

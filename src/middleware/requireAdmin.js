@@ -4,7 +4,7 @@
  * - pagine HTML: reindirizza al login
  */
 function requireAdmin(req, res, next) {
-  if (req.session && req.session.adminId) return next();
+  if (req.session && (req.session.adminId || req.session.demo)) return next();
   if (req.accepts(['html', 'json']) === 'html' && req.method === 'GET') {
     return res.redirect('/admin/login');
   }

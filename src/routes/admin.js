@@ -6,7 +6,7 @@
 const express = require('express');
 const rateLimit = require('express-rate-limit');
 const requireAdmin = require('../middleware/requireAdmin');
-const { loadAdminContext, requireSuper } = require('../middleware/shop');
+const { loadAdminContext, demoReadOnly, requireSuper } = require('../middleware/shop');
 const { authenticate, changePassword, requestPasswordReset, resetPassword } = require('../services/adminService');
 const bookingService = require('../services/bookingService');
 const catalog = require('../services/catalogService');
@@ -79,7 +79,7 @@ router.post('/password/reset', resetLimiter, async (req, res) => {
 });
 
 // Da qui in poi serve il login
-router.use(requireAdmin, loadAdminContext);
+router.use(requireAdmin, loadAdminContext, demoReadOnly);
 
 router.put('/password', loginLimiter, async (req, res) => {
   const { current, password } = req.body || {};

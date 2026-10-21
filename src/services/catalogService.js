@@ -10,6 +10,7 @@ function serializeService(s) {
     id: String(s._id),
     name: s.name,
     description: s.description || '',
+    category: s.category || '',
     durationMinutes: s.durationMinutes,
     price: s.priceCents / 100,
     active: s.active,
@@ -26,6 +27,11 @@ function parseServiceInput(body, { partial = false } = {}) {
     data.name = name;
   }
   if (body.description !== undefined) data.description = String(body.description || '').trim();
+  if (body.category !== undefined) {
+    const category = String(body.category || '').trim().replace(/\s+/g, ' ');
+    if (category.length > 40) throw badRequest('La categoria può avere al massimo 40 caratteri');
+    data.category = category;
+  }
   if (body.durationMinutes !== undefined || !partial) {
     const d = Number(body.durationMinutes);
     if (!Number.isInteger(d) || d <= 0) throw badRequest('Durata non valida');

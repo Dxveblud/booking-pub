@@ -182,6 +182,16 @@ test('admin: servizi e orari', async () => {
   const badDuration = await call('POST', '/admin/api/services', { name: 'X', durationMinutes: 7, price: 1 }, { auth: true });
   assert.equal(badDuration.status, 400);
 
+  // categoria: facoltativa, ripulita dagli spazi e visibile anche nell'API pubblica
+  const withCat = await call('POST', '/admin/api/services', { name: 'Shatush', durationMinutes: 60, price: 70, category: '  Colore   e luci ' }, { auth: true });
+  assert.equal(withCat.status, 201);
+  assert.equal(withCat.data.category, 'Colore e luci');
+  assert.equal(created.data.category, '');
+  const pub = await call('GET', '/api/services');
+  assert.equal(pub.data.find((s) => s.id === withCat.data.id).category, 'Colore e luci');
+  const longCat = await call('POST', '/admin/api/services', { name: 'Y', durationMinutes: 30, price: 1, category: 'x'.repeat(41) }, { auth: true });
+  assert.equal(longCat.status, 400);
+
   const settings = await call('GET', '/admin/api/settings', undefined, { auth: true });
   const hours = { ...settings.data.openingHours, 1: [{ start: '10:00', end: '12:00' }] };
   const saved = await call('PUT', '/admin/api/settings', { openingHours: hours }, { auth: true });

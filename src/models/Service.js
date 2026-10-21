@@ -10,6 +10,8 @@ const serviceSchema = new mongoose.Schema(
     businessId: { type: String, required: true, index: true },
     name: { type: String, required: true, trim: true, maxlength: 80 },
     description: { type: String, trim: true, maxlength: 300, default: '' },
+    // Facoltativa: nel widget i servizi si raggruppano per categoria (es. "Massaggi")
+    category: { type: String, trim: true, maxlength: 40, default: '' },
     durationMinutes: {
       type: Number,
       required: true,

@@ -731,19 +731,27 @@
     if (!state.services.length) { box.appendChild(el('p', { class: 'muted', text: 'Nessun servizio. Aggiungine uno.' })); return; }
     var fmt = new Intl.NumberFormat(LOCALE, { style: 'currency', currency: CURRENCY, minimumFractionDigits: 0 });
 
+    // Categorie già usate, suggerite mentre si scrive
+    var datalist = $('service-categories');
+    datalist.innerHTML = '';
+    state.services.map(function (s) { return s.category; })
+      .filter(function (c, i, all) { return c && all.indexOf(c) === i; })
+      .forEach(function (c) { datalist.appendChild(el('option', { value: c })); });
+
     // Ogni servizio è una scheda compatta che si apre per modificarlo
     state.services.forEach(function (s) {
       var name = el('input', { value: s.name, maxlength: 80 });
       var duration = el('input', { type: 'number', min: 5, step: 5, value: s.durationMinutes, inputmode: 'numeric' });
       var price = el('input', { type: 'number', min: 0, step: 0.5, value: s.price, inputmode: 'decimal' });
       var desc = el('input', { value: s.description, maxlength: 300 });
+      var category = el('input', { value: s.category || '', maxlength: 40, list: 'service-categories', autocomplete: 'off' });
       var active = el('input', { type: 'checkbox' });
       active.checked = s.active;
 
       var save = function () {
         api('/services/' + s.id, {
           method: 'PUT',
-          body: { name: name.value, durationMinutes: Number(duration.value), price: Number(price.value), description: desc.value, active: active.checked },
+          body: { name: name.value, durationMinutes: Number(duration.value), price: Number(price.value), description: desc.value, category: category.value, active: active.checked },
         })
           .then(function () { toast('Servizio salvato'); return loadServices(); })
           .then(renderServices)
@@ -761,7 +769,7 @@
         el('summary', {}, [
           el('span', { class: 'sc-main' }, [
             el('strong', { text: s.name }),
-            el('span', { class: 'muted small', text: s.durationMinutes + ' min' + (s.active ? '' : ' · non prenotabile online') }),
+            el('span', { class: 'muted small', text: (s.category ? s.category + ' · ' : '') + s.durationMinutes + ' min' + (s.active ? '' : ' · non prenotabile online') }),
           ]),
           el('span', { class: 'sc-price', text: fmt.format(s.price) }),
           el('span', { class: 'sc-chevron', 'aria-hidden': 'true', text: '›' }),
@@ -773,6 +781,7 @@
             el('label', { class: 'field' }, [el('span', { text: 'Prezzo' }), price]),
           ]),
           el('label', { class: 'field' }, [el('span', { text: 'Descrizione' }), desc]),
+          el('label', { class: 'field' }, [el('span', { text: 'Categoria' }), category]),
           el('div', { class: 'sc-actions' }, [
             el('label', { class: 'checkbox' }, [active, 'Prenotabile online']),
             el('span', { class: 'spacer' }),
@@ -898,7 +907,7 @@
     var f = e.target.elements;
     api('/services', {
       method: 'POST',
-      body: { name: f.name.value, durationMinutes: Number(f.durationMinutes.value), price: Number(f.price.value), description: f.description.value },
+      body: { name: f.name.value, durationMinutes: Number(f.durationMinutes.value), price: Number(f.price.value), description: f.description.value, category: f.category.value },
     })
       .then(function () { e.target.reset(); toast('Servizio aggiunto'); return loadServices(); })
       .then(renderServices)

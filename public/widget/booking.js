@@ -26,6 +26,7 @@
     business: null, services: [], hours: {}, service: null, date: null, time: null, customer: null, booking: null, step: 'service',
     staffList: [], // collaboratori che fanno il servizio scelto (il passo compare se sono almeno 2)
     staff: null, // collaboratore scelto; null = chiunque
+    category: '', query: '', // filtri della lista servizi ('' = tutte le categorie)
   };
 
   var $ = function (id) { return document.getElementById(id); };
@@ -145,22 +146,119 @@
 
   /* --------------------------- 1. Servizio ---------------------------- */
 
+  // "Massaggio Tuina 60 min" → "Massaggio Tuina": le durate dello stesso
+  // trattamento diventano una sola scheda con i minuti da toccare
+  var DURATION_SUFFIX = /\s*[-–·,(]?\s*\d+\s*(min|minuti|')\)?\s*$/i;
+
+  function norm(s) { return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
+
+  function groupServices(services) {
+    var groups = [];
+    var byKey = {};
+    services.forEach(function (s) {
+      var base = s.name.replace(DURATION_SUFFIX, '').trim() || s.name;
+      var key = norm(s.category) + '|' + norm(base);
+      if (!byKey[key]) {
+        byKey[key] = { name: base, category: s.category || '', description: s.description || '', variants: [] };
+        groups.push(byKey[key]);
+      }
+      byKey[key].variants.push(s);
+    });
+    groups.forEach(function (g) {
+      if (g.variants.length === 1) g.name = g.variants[0].name; // da solo tiene il suo nome
+      g.variants.sort(function (a, b) { return a.durationMinutes - b.durationMinutes; });
+    });
+    return groups;
+  }
+
+  function serviceCard(s) {
+    var btn = el('button', { type: 'button', class: 'bk-service' }, [
+      el('span', { class: 'bk-service-name', text: s.name }),
+      el('span', { class: 'bk-service-price', text: formatPrice(s.price) }),
+      el('span', { class: 'bk-service-desc', text: s.description || '' }),
+      el('span', { class: 'bk-service-time', text: '⏱ ' + s.durationMinutes + ' min' }),
+    ]);
+    btn.addEventListener('click', function () { selectService(s); });
+    return btn;
+  }
+
+  function variantCard(g) {
+    var from = Math.min.apply(null, g.variants.map(function (v) { return v.price; }));
+    var durations = el('div', { class: 'bk-durations' });
+    g.variants.forEach(function (v) {
+      var b = el('button', { type: 'button', class: 'bk-duration', 'aria-label': v.name + ', ' + formatPrice(v.price) }, [
+        el('b', { text: v.durationMinutes + ' min' }),
+        el('small', { text: formatPrice(v.price) }),
+      ]);
+      b.addEventListener('click', function () { selectService(v); });
+      durations.appendChild(b);
+    });
+    return el('div', { class: 'bk-service bk-variants' }, [
+      el('span', { class: 'bk-service-name', text: g.name }),
+      el('span', { class: 'bk-service-price', text: 'da ' + formatPrice(from) }),
+      g.description ? el('span', { class: 'bk-service-desc', text: g.description }) : null,
+      durations,
+    ]);
+  }
+
+  /** Categorie e ricerca: compaiono solo se servono (più categorie, tanti servizi). */
+  function renderFilters(categories, count) {
+    var cats = $('bk-cats');
+    cats.innerHTML = '';
+    cats.hidden = categories.length < 2;
+    [''].concat(categories).forEach(function (c) {
+      var b = el('button', { type: 'button', class: 'bk-cat', 'aria-pressed': String(state.category === c), text: c || 'Tutti' });
+      b.addEventListener('click', function () {
+        state.category = c;
+        renderServices();
+        $('bk-body').scrollTop = 0;
+      });
+      cats.appendChild(b);
+    });
+    $('bk-search').hidden = count < 8;
+    $('bk-filters').hidden = cats.hidden && $('bk-search').hidden;
+    var active = cats.querySelector('[aria-pressed="true"]');
+    if (active && active.scrollIntoView) active.scrollIntoView({ block: 'nearest', inline: 'center' });
+  }
+
   function renderServices() {
     var list = $('bk-services');
     list.innerHTML = '';
     if (!state.services.length) {
+      $('bk-filters').hidden = true;
       list.appendChild(el('li', { class: 'bk-empty', text: 'Nessun servizio prenotabile al momento.' }));
       return;
     }
-    state.services.forEach(function (s) {
-      var btn = el('button', { type: 'button', class: 'bk-service' }, [
-        el('span', { class: 'bk-service-name', text: s.name }),
-        el('span', { class: 'bk-service-price', text: formatPrice(s.price) }),
-        el('span', { class: 'bk-service-desc', text: s.description || '' }),
-        el('span', { class: 'bk-service-time', text: '⏱ ' + s.durationMinutes + ' min' }),
-      ]);
-      btn.addEventListener('click', function () { selectService(s); });
-      list.appendChild(el('li', {}, [btn]));
+    var groups = groupServices(state.services);
+    var categories = [];
+    groups.forEach(function (g) { if (g.category && categories.indexOf(g.category) < 0) categories.push(g.category); });
+    if (categories.indexOf(state.category) < 0) state.category = '';
+    renderFilters(categories, groups.length);
+
+    var q = norm(state.query).trim();
+    var shown = groups.filter(function (g) {
+      return (!state.category || g.category === state.category) &&
+        (!q || norm(g.name + ' ' + g.category + ' ' + g.description).indexOf(q) >= 0);
+    });
+    if (!shown.length) {
+      list.appendChild(el('li', { class: 'bk-empty', text: 'Nessun servizio trovato.' }));
+      return;
+    }
+    // In "Tutti" i servizi stanno sotto il titolo della loro categoria
+    var withTitles = categories.length > 1 && !state.category;
+    if (withTitles) {
+      var rank = function (g) { return g.category ? categories.indexOf(g.category) : categories.length; };
+      shown = shown.map(function (g, i) { return { g: g, i: i }; })
+        .sort(function (a, b) { return rank(a.g) - rank(b.g) || a.i - b.i; })
+        .map(function (x) { return x.g; });
+    }
+    var last = null;
+    shown.forEach(function (g) {
+      if (withTitles && g.category !== last) {
+        list.appendChild(el('li', { class: 'bk-cat-title', text: g.category || 'Altro' }));
+        last = g.category;
+      }
+      list.appendChild(el('li', {}, [g.variants.length > 1 ? variantCard(g) : serviceCard(g.variants[0])]));
     });
   }
 
@@ -452,6 +550,7 @@
     });
     $('bk-ics').addEventListener('click', downloadIcs);
     $('bk-restart').addEventListener('click', restart);
+    $('bk-search').addEventListener('input', function (e) { state.query = e.target.value; renderServices(); });
 
     goTo('service');
     setLoading(true);
